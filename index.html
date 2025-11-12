@@ -329,14 +329,24 @@
         
         const initFirebase = async () => {
             try {
-                // --- PERBAIKAN DI SINI ---
-                // Menggunakan variabel global yang disediakan oleh environment (Canvas)
-                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-                state.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                // --- PERUBAHAN DI SINI ---
+                // Masukkan konfigurasi Firebase Anda dari firebase.google.com
+               const firebaseConfig = {
+  apiKey: "AIzaSyAUpWUeKypU53Fdb4okuZ-oVJNuyTK19i8",
+  authDomain: "wnet-c4907.firebaseapp.com",
+  projectId: "wnet-c4907",
+  storageBucket: "wnet-c4907.firebasestorage.app",
+  messagingSenderId: "427788084827",
+  appId: "1:427788084827:web:7978895d654fded498c17e"
+};
+                
+                // Ambil appId dari konfigurasi Anda
+                state.appId = firebaseConfig.appId || 'default-app-id';
 
-                if (!firebaseConfig.apiKey) {
-                    console.error("Konfigurasi Firebase tidak ditemukan! Variabel global __firebase_config kosong.");
-                    dom.loadingOverlay.querySelector('p').textContent = "Error: Konfigurasi Firebase tidak ditemukan.";
+                // Cek apakah konfigurasi sudah diisi
+                if (!firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("MASUKKAN_")) {
+                    console.error("Konfigurasi Firebase tidak ditemukan! Harap edit file index.html dan masukkan kunci API Anda.");
+                    dom.loadingOverlay.querySelector('p').textContent = "Error: Konfigurasi Firebase Anda belum dimasukkan.";
                     return;
                 }
                 
