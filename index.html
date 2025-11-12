@@ -329,11 +329,13 @@
         
         const initFirebase = async () => {
             try {
+                // --- PERBAIKAN DI SINI ---
+                // Menggunakan variabel global yang disediakan oleh environment (Canvas)
                 const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
                 state.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
                 if (!firebaseConfig.apiKey) {
-                    console.error("Konfigurasi Firebase tidak ditemukan!");
+                    console.error("Konfigurasi Firebase tidak ditemukan! Variabel global __firebase_config kosong.");
                     dom.loadingOverlay.querySelector('p').textContent = "Error: Konfigurasi Firebase tidak ditemukan.";
                     return;
                 }
@@ -347,12 +349,15 @@
                     if (user) {
                         state.userId = user.uid;
                         state.isAuthReady = true;
+                        // Path database pribadi untuk pengguna ini
                         const collectionPath = `artifacts/${state.appId}/users/${state.userId}/${APP_COLLECTION}`;
                         customersCollectionRef = collection(db, collectionPath);
                         loadCustomers(); 
                     } else if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        // Login dengan token kustom jika tersedia
                         await signInWithCustomToken(auth, __initial_auth_token);
                     } else {
+                        // Fallback ke login anonim jika tidak ada token
                         await signInAnonymously(auth);
                     }
                 });
@@ -363,7 +368,10 @@
         };
 
         const loadCustomers = () => {
-            if (!state.isAuthReady || !customersCollectionRef) return;
+            if (!state.isAuthReady || !customersCollectionRef) {
+                 console.warn("Load customers dipanggil sebelum auth siap atau collection ref belum diatur.");
+                return;
+            }
 
             onSnapshot(customersCollectionRef, (snapshot) => {
                 state.customers = snapshot.docs.map(doc => ({
@@ -396,9 +404,9 @@
 
             // 2. Filter berdasarkan Tab Aktif
             if (state.filterTab === 'lunas') {
-                filteredCustomers = filteredCustomers.filter(c => c.totalTagihan === 0);
+                filteredCustomers = filteredCustomers.filter(c => (c.totalTagihan || 0) === 0);
             } else if (state.filterTab === 'belum lunas') {
-                filteredCustomers = filteredCustomers.filter(c => c.totalTagihan > 0);
+                filteredCustomers = filteredCustomers.filter(c => (c.totalTagihan || 0) > 0);
             }
 
             if (filteredCustomers.length === 0) {
@@ -414,7 +422,7 @@
 
             filteredCustomers.forEach(customer => {
                 const customerElement = document.createElement('div');
-                const isPaid = customer.totalTagihan === 0;
+                const isPaid = (customer.totalTagihan || 0) === 0;
                 const totalTagihanClass = isPaid ? 'text-green-600' : 'text-red-600';
                 const borderClass = isPaid ? 'border-green-400' : 'border-red-400';
 
@@ -784,7 +792,7 @@
                     try {
                         const customerRef = doc(customersCollectionRef, customerId);
                         const newTagihanBulanIni = customer.harga;
-                        const newTotalTagihan = newTagihanBulanIni + customer.tunggakan;
+                        const newTotalTagihan = newTagihanBulanIni + (customer.tunggakan || 0);
                         await updateDoc(customerRef, {
                             tagihanBulanIni: newTagihanBulanIni,
                             totalTagihan: newTotalTagihan
@@ -812,7 +820,7 @@
                     if (customer.tagihanBulanIni === 0 && customer.harga > 0) {
                         const customerRef = doc(customersCollectionRef, customer.id);
                         const newTagihanBulanIni = customer.harga;
-                        const newTotalTagihan = newTagihanBulanIni + customer.tunggakan;
+                        const newTotalTagihan = newTagihanBulanIni + (customer.tunggakan || 0);
                         batch.update(customerRef, {
                             tagihanBulanIni: newTagihanBulanIni,
                             totalTagihan: newTotalTagihan
@@ -916,7 +924,7 @@
             const daysUsed = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
             const fullBill = customer.harga;
             const proratedBill = Math.round((daysUsed / periodDays) * fullBill);
-            const newTotalTagihan = proratedBill + customer.tunggakan;
+            const newTotalTagihan = proratedBill + (customer.tunggakan || 0);
 
             showLoading("Menyimpan tagihan prorata...");
             try {
@@ -1003,10 +1011,13 @@
             document.body.addEventListener('click', (e) => {
                 const target = e.target.closest('button');
                 if (!target) return;
+                
+                // Cek otentikasi SEBELUM melakukan aksi (kecuali menutup modal)
                 if (!state.isAuthReady && target.dataset.action !== 'modal-close') {
                     showToast("Harap tunggu koneksi ke database selesai.", 'warning');
                     return;
                 }
+                
                 const action = target.dataset.action;
                 const id = target.dataset.id;
                 
