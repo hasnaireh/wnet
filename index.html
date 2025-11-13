@@ -1231,1247 +1231,1354 @@
     <!-- ============================================= -->
     <!-- Firebase SDK dan JavaScript Aplikasi         -->
     <!-- ============================================= -->
-    <script type="module">
-        // Import fungsi Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, 
-            deleteDoc, onSnapshot, collection, query, getDocs, writeBatch 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+   <script type="module">
+    // Import fungsi Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { 
+        getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, 
+        deleteDoc, onSnapshot, collection, query, getDocs, writeBatch,
+        where, orderBy, Timestamp
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // =========================================================================
-        // Konfigurasi Firebase Anda (Dari file yang Anda unggah)
-        // =========================================================================
-       const firebaseConfig = {
-          apiKey: "AIzaSyAUpWUeKypU53Fdb4okuZ-oVJNuyTK19i8",
-          authDomain: "wnet-c4907.firebaseapp.com",
-          projectId: "wnet-c4907",
-          storageBucket: "wnet-c4907.appspot.com",
-          messagingSenderId: "427788084827",
-          appId: "1:427788084827:web:7978895d654fded498c17e"
-        };
-        // =========================================================================
+    // =========================================================================
+    // Konfigurasi Firebase
+    // =========================================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyAUpWUeKypU53Fdb4okuZ-oVJNuyTK19i8",
+        authDomain: "wnet-c4907.firebaseapp.com",
+        projectId: "wnet-c4907",
+        storageBucket: "wnet-c4907.appspot.com",
+        messagingSenderId: "427788084827",
+        appId: "1:427788084827:web:7978895d654fded498c17e"
+    };
 
-        // --- Variabel Global Aplikasi ---
-        let db;
-        let auth;
-        let customersCollection;
-        let settingsCollection;
-        let settingsDocRef;
-        let unsubscribeSnap; // Untuk listener onSnapshot
-        let unsubscribeSettingsSnap; // Listener untuk settings
-        let currentFilter = "semua";
-        let customersData = []; // Cache data lokal
-        let appSettings = {
-            namaUsaha: "WAHYU Net",
-            templateWa: "Halo {nama}, kami dari {nama_usaha} ingin memberitahukan total tagihan Anda bulan ini adalah {total_tagihan}. Terima kasih."
-        };
+    // --- Variabel Global Aplikasi ---
+    let db;
+    let auth;
+    let customersCollection;
+    let settingsCollection;
+    let paymentsCollection; // KOLEKSI BARU: untuk mencatat pembayaran
+    let settingsDocRef;
+    let unsubscribeSnap;
+    let unsubscribeSettingsSnap;
+    let currentFilter = "semua";
+    let customersData = [];
+    let appSettings = {
+        namaUsaha: "WAHYU Net",
+        templateWa: "Halo {nama}, kami dari {nama_usaha} ingin memberitahukan total tagihan Anda bulan ini adalah {total_tagihan}. Terima kasih."
+    };
 
-        // --- Variabel Kunci Sandi ---
-        const PASSWORD_HASH_KEY = 'wahyu-net-password-hash';
-        const correctPassword = "net.wahyu"; // <-- KATA SANDI ANDA
+    // --- Variabel Kunci Sandi ---
+    const PASSWORD_HASH_KEY = 'wahyu-net-password-hash';
+    const correctPassword = "net.wahyu";
 
-        // --- DOM Elements Aplikasi ---
-        const customerList = document.getElementById('customer-list');
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const emptyState = document.getElementById('empty-state');
-        const totalTagihanHeader = document.getElementById('total-tagihan-header');
-        const appTitleHeader = document.getElementById('app-title-header');
-        
-        // --- DOM Elements Kunci Sandi ---
-        const lockScreen = document.getElementById('lockScreen');
-        const appContent = document.getElementById('appContent');
-        const lockForm = document.getElementById('lockForm');
-        const passwordInput = document.getElementById('password');
-        const passwordError = document.getElementById('passwordError');
+    // --- DOM Elements Aplikasi ---
+    const customerList = document.getElementById('customer-list');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const emptyState = document.getElementById('empty-state');
+    const totalTagihanHeader = document.getElementById('total-tagihan-header');
+    const appTitleHeader = document.getElementById('app-title-header');
+    
+    // --- DOM Elements Kunci Sandi ---
+    const lockScreen = document.getElementById('lockScreen');
+    const appContent = document.getElementById('appContent');
+    const lockForm = document.getElementById('lockForm');
+    const passwordInput = document.getElementById('password');
+    const passwordError = document.getElementById('passwordError');
 
-        // --- Fungsi Kunci Sandi ---
+    // ========================
+    // FUNGSI STATISTIK & CHART
+    // ========================
 
-        // Fungsi untuk mengecek reset password dari URL
-        function checkURLReset() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const reset = urlParams.get('reset');
-            if (reset === 'true') {
-                localStorage.removeItem(PASSWORD_HASH_KEY);
-                console.log("Password hash reset.");
-                showInfoModal("Password telah direset. Silakan login kembali.", "info");
-                // Hapus query param agar tidak reset terus-menerus saat refresh
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
-        }
-
-        // Inisialisasi layar kunci
-        function initializeLockScreen() {
-            const storedHash = localStorage.getItem(PASSWORD_HASH_KEY);
-            if (!storedHash) {
-                // Jika belum ada hash, ini adalah login pertama kali
-                console.log("Belum ada hash. Menunggu login pertama.");
-            }
-            // Layar kunci akan tetap tampil sampai login berhasil
-        }
-        
-        // Handle submit form login
-        async function handleLogin(event) {
-            event.preventDefault();
-            const password = passwordInput.value;
-            const storedHash = localStorage.getItem(PASSWORD_HASH_KEY);
-            const correctHash = sha256(correctPassword);
-
-            if (!storedHash) {
-                // Login pertama kali
-                if (password === correctPassword) {
-                    // Simpan hash yang benar
-                    localStorage.setItem(PASSWORD_HASH_KEY, correctHash);
-                    unlockApp();
-                } else {
-                    triggerLoginError();
-                }
-            } else {
-                // Login berikutnya
-                const inputHash = sha256(password);
-                if (inputHash === correctHash) {
-                    // Jika hash input = hash yang benar (bukan hash tersimpan)
-                    // Ini untuk mengoreksi jika hash tersimpan salah (legacy fix)
-                    if (storedHash !== correctHash) {
-                         localStorage.setItem(PASSWORD_HASH_KEY, correctHash);
-                    }
-                    unlockApp();
-                } else {
-                    triggerLoginError();
-                }
-            }
-        }
-
-        // Tampilkan error login
-        function triggerLoginError() {
-            passwordError.classList.remove('hidden');
-            const lockFormContainer = lockForm.parentElement;
-            lockFormContainer.classList.add('shake');
-            passwordInput.focus();
-            setTimeout(() => {
-                lockFormContainer.classList.remove('shake');
-            }, 500);
-        }
-
-        // Buka kunci aplikasi
-        function unlockApp() {
-            lockScreen.classList.add('hidden');
-            appContent.classList.remove('hidden');
-            // Mulai inisialisasi Firebase SETELAH login berhasil
-            initializeAppService();
-        }
-
-        // --- Fungsi Utama Aplikasi (dari file app wnet.txt) ---
-
-        // Fungsi inisialisasi aplikasi
-        async function initializeAppService() {
-            try {
-                // Cek jika config masih placeholder
-                if (firebaseConfig.apiKey.startsWith("MASUKKAN_")) {
-                    console.error("Konfigurasi Firebase tidak ditemukan! Harap edit file index.html.");
-                    showInfoModal("Error: Konfigurasi Firebase tidak ditemukan.", "error");
-                    loadingOverlay.style.display = 'none';
-                    return;
-                }
-                
-                // Inisialisasi Firebase
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                
-                // Login secara anonim
-                await signInAnonymously(auth);
-                
-                const userId = auth.currentUser.uid;
-                if (!userId) {
-                    throw new Error("Gagal mendapatkan User ID setelah login anonim.");
-                }
-
-                // Menggunakan koleksi 'pelanggan' yang sederhana
-                customersCollection = collection(db, "pelanggan");
-                // Koleksi untuk pengaturan
-                settingsCollection = collection(db, "settings");
-                settingsDocRef = doc(settingsCollection, "appConfig");
-
-                // Mulai mendengarkan perubahan data
-                setupSnapshotListener();
-                setupSettingsListener(); // Dengarkan perubahan settings
-
-            } catch (error) {
-                console.error("Error initializing Firebase:", error);
-                showInfoModal("Error terhubung ke database.", "error");
-                loadingOverlay.style.display = 'none';
-            }
-        }
-
-        // Setup listener real-time (onSnapshot) untuk PELANGGAN
-        function setupSnapshotListener() {
-            if (unsubscribeSnap) {
-                unsubscribeSnap(); // Hentikan listener lama jika ada
-            }
-
-            unsubscribeSnap = onSnapshot(customersCollection, (snapshot) => {
-                customersData = [];
-                snapshot.forEach((doc) => {
-                    customersData.push({ id: doc.id, ...doc.data() });
-                });
-                
-                // Urutkan data berdasarkan nama
-                customersData.sort((a, b) => a.nama.localeCompare(b.nama));
-                
-                renderCustomers(currentFilter); // Render dengan filter dan search
-                calculateTotalBill();
-                updateFilterCounts();
-                updateAnalytics(); // Update data di Home
-                loadingOverlay.style.display = 'none';
-                
-            }, (error) => {
-                console.error("Error listening to snapshot:", error);
-                showInfoModal("Error mengambil data real-time.", "error");
-                loadingOverlay.style.display = 'none';
+    // Fungsi untuk mencatat pembayaran ke history
+    async function recordPayment(customerId, customerName, jumlahBayar, jenisBayar, bulanTahun) {
+        try {
+            await addDoc(paymentsCollection, {
+                customerId: customerId,
+                customerName: customerName,
+                jumlahBayar: jumlahBayar,
+                jenisBayar: jenisBayar, // 'lunas' atau 'manual'
+                bulanTahun: bulanTahun, // Format: 'YYYY-MM'
+                tanggalBayar: new Date().toISOString(),
+                createdAt: Timestamp.now()
             });
+            console.log('Pembayaran tercatat:', { customerName, jumlahBayar, bulanTahun });
+        } catch (error) {
+            console.error('Error recording payment:', error);
         }
-        
-        // Setup listener real-time (onSnapshot) untuk PENGATURAN
-        function setupSettingsListener() {
-            if (unsubscribeSettingsSnap) {
-                unsubscribeSettingsSnap();
-            }
+    }
 
-            unsubscribeSettingsSnap = onSnapshot(settingsDocRef, (doc) => {
-                if (doc.exists()) {
-                    appSettings = { ...appSettings, ...doc.data() };
-                } else {
-                    // Jika belum ada settings, buat default
-                    setDoc(settingsDocRef, appSettings).catch(e => console.error("Could not create default settings", e));
-                }
-                updateUIForSettings();
-            }, (error) => {
-                console.error("Error listening to settings:", error);
-            });
-        }
-        
-        // Update UI berdasarkan settings
-        function updateUIForSettings() {
-            appTitleHeader.textContent = appSettings.namaUsaha || "Billing App";
-            document.getElementById('namaUsaha').value = appSettings.namaUsaha;
-            document.getElementById('templateWa').value = appSettings.templateWa;
-        }
-
-        // Fungsi untuk merender daftar pelanggan (dengan logika search)
-        function renderCustomers(filter) {
-            customerList.innerHTML = '';
+    // Fungsi untuk mendapatkan data statistik bulanan
+    async function getMonthlyStats() {
+        try {
+            // Ambil data 6 bulan terakhir
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
             
-            // 1. Filter by tab
-            let filteredCustomers;
-            if (filter === "lunas") {
-                filteredCustomers = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0);
-            } else if (filter === "belum-bayar") {
-                filteredCustomers = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) > 0);
-            } else if (filter === "ada-tunggakan") {
-                filteredCustomers = customersData.filter(c => (c.tunggakan || 0) > 0);
-            } else { // 'semua'
-                filteredCustomers = customersData;
+            const paymentsQuery = query(
+                paymentsCollection,
+                where('tanggalBayar', '>=', sixMonthsAgo.toISOString()),
+                orderBy('tanggalBayar', 'asc')
+            );
+            
+            const querySnapshot = await getDocs(paymentsQuery);
+            const monthlyData = {};
+            
+            // Inisialisasi 6 bulan terakhir
+            for (let i = 5; i >= 0; i--) {
+                const date = new Date();
+                date.setMonth(date.getMonth() - i);
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                const monthName = date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                
+                monthlyData[monthKey] = {
+                    monthName: monthName,
+                    pendapatan: 0,
+                    tunggakan: 0
+                };
+            }
+            
+            // Hitung pendapatan per bulan
+            querySnapshot.forEach((doc) => {
+                const payment = doc.data();
+                const monthKey = payment.bulanTahun;
+                
+                if (monthlyData[monthKey]) {
+                    monthlyData[monthKey].pendapatan += payment.jumlahBayar;
+                }
+            });
+            
+            // Hitung tunggakan per bulan (dari data pelanggan saat ini)
+            const currentMonth = new Date().toISOString().substring(0, 7);
+            const totalTunggakanSekarang = customersData.reduce((acc, c) => acc + (c.tunggakan || 0), 0);
+            
+            if (monthlyData[currentMonth]) {
+                monthlyData[currentMonth].tunggakan = totalTunggakanSekarang;
+            }
+            
+            return monthlyData;
+        } catch (error) {
+            console.error('Error getting monthly stats:', error);
+            return {};
+        }
+    }
+
+    // Fungsi untuk render chart sederhana
+    function renderChart(statsData, chartType = 'pendapatan') {
+        const chartContainer = document.getElementById('chartContainer');
+        const months = Object.values(statsData).map(data => data.monthName);
+        const dataValues = Object.values(statsData).map(data => 
+            chartType === 'pendapatan' ? data.pendapatan : data.tunggakan
+        );
+        
+        if (dataValues.every(val => val === 0)) {
+            chartContainer.innerHTML = `
+                <div class="text-center text-gray-500 py-8">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 mx-auto text-gray-300 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                        <line x1="12" y1="22.08" x2="12" y2="12"/>
+                    </svg>
+                    <p class="text-lg font-medium">Belum ada data ${chartType}</p>
+                    <p class="text-sm mt-1">Data akan muncul setelah ada pembayaran</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const maxValue = Math.max(...dataValues);
+        const chartHeight = 200;
+        
+        let chartHTML = `
+            <div class="chart-container" style="height: ${chartHeight}px; position: relative;">
+                <div class="flex items-end justify-between h-full space-x-2">
+        `;
+        
+        dataValues.forEach((value, index) => {
+            const barHeight = maxValue > 0 ? (value / maxValue) * (chartHeight - 40) : 0;
+            const isCurrentMonth = index === dataValues.length - 1;
+            const barColor = chartType === 'pendapatan' ? 
+                (isCurrentMonth ? 'bg-green-500' : 'bg-green-400') : 
+                (isCurrentMonth ? 'bg-red-500' : 'bg-red-400');
+            
+            chartHTML += `
+                <div class="flex flex-col items-center flex-1" style="height: ${chartHeight}px;">
+                    <div class="text-xs text-gray-600 mb-1 text-center">${formatRupiah(value)}</div>
+                    <div class="${barColor} rounded-t w-full transition-all duration-300 hover:opacity-80" 
+                         style="height: ${barHeight}px; min-height: ${value > 0 ? '20px' : '0'};"
+                         title="${months[index]}: ${formatRupiah(value)}">
+                    </div>
+                    <div class="text-xs text-gray-500 mt-2 text-center" style="writing-mode: vertical-rl; transform: rotate(180deg); height: 60px;">
+                        ${months[index].substring(0, 3)}
+                    </div>
+                </div>
+            `;
+        });
+        
+        chartHTML += `
+                </div>
+                <div class="text-center mt-4">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${chartType === 'pendapatan' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                        Total ${chartType === 'pendapatan' ? 'Pendapatan' : 'Tunggakan'}: ${formatRupiah(dataValues.reduce((a, b) => a + b, 0))}
+                    </span>
+                </div>
+            </div>
+        `;
+        
+        chartContainer.innerHTML = chartHTML;
+    }
+
+    // Fungsi untuk update chart
+    async function updateChart() {
+        const chartType = document.getElementById('chartType').value;
+        const statsData = await getMonthlyStats();
+        renderChart(statsData, chartType);
+    }
+
+    // ========================
+    // FUNGSI LAINNYA (tetap sama)
+    // ========================
+
+    // Fungsi Kunci Sandi
+    function checkURLReset() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const reset = urlParams.get('reset');
+        if (reset === 'true') {
+            localStorage.removeItem(PASSWORD_HASH_KEY);
+            console.log("Password hash reset.");
+            showInfoModal("Password telah direset. Silakan login kembali.", "info");
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
+
+    function initializeLockScreen() {
+        const storedHash = localStorage.getItem(PASSWORD_HASH_KEY);
+        if (!storedHash) {
+            console.log("Belum ada hash. Menunggu login pertama.");
+        }
+    }
+    
+    async function handleLogin(event) {
+        event.preventDefault();
+        const password = passwordInput.value;
+        const storedHash = localStorage.getItem(PASSWORD_HASH_KEY);
+        const correctHash = sha256(correctPassword);
+
+        if (!storedHash) {
+            if (password === correctPassword) {
+                localStorage.setItem(PASSWORD_HASH_KEY, correctHash);
+                unlockApp();
+            } else {
+                triggerLoginError();
+            }
+        } else {
+            const inputHash = sha256(password);
+            if (inputHash === correctHash) {
+                if (storedHash !== correctHash) {
+                    localStorage.setItem(PASSWORD_HASH_KEY, correctHash);
+                }
+                unlockApp();
+            } else {
+                triggerLoginError();
+            }
+        }
+    }
+
+    function triggerLoginError() {
+        passwordError.classList.remove('hidden');
+        const lockFormContainer = lockForm.parentElement;
+        lockFormContainer.classList.add('shake');
+        passwordInput.focus();
+        setTimeout(() => {
+            lockFormContainer.classList.remove('shake');
+        }, 500);
+    }
+
+    function unlockApp() {
+        lockScreen.classList.add('hidden');
+        appContent.classList.remove('hidden');
+        initializeAppService();
+    }
+
+    // Fungsi Utama Aplikasi
+    async function initializeAppService() {
+        try {
+            if (firebaseConfig.apiKey.startsWith("MASUKKAN_")) {
+                console.error("Konfigurasi Firebase tidak ditemukan!");
+                showInfoModal("Error: Konfigurasi Firebase tidak ditemukan.", "error");
+                loadingOverlay.style.display = 'none';
+                return;
+            }
+            
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            
+            await signInAnonymously(auth);
+            
+            const userId = auth.currentUser.uid;
+            if (!userId) {
+                throw new Error("Gagal mendapatkan User ID setelah login anonim.");
             }
 
-            // 2. Filter by search term
-            const searchTerm = document.getElementById('search-bar').value.toLowerCase();
-            if (searchTerm) {
-                filteredCustomers = filteredCustomers.filter(c => 
-                    c.nama.toLowerCase().includes(searchTerm)
+            customersCollection = collection(db, "pelanggan");
+            settingsCollection = collection(db, "settings");
+            paymentsCollection = collection(db, "payments"); // KOLEKSI BARU
+            settingsDocRef = doc(settingsCollection, "appConfig");
+
+            setupSnapshotListener();
+            setupSettingsListener();
+
+        } catch (error) {
+            console.error("Error initializing Firebase:", error);
+            showInfoModal("Error terhubung ke database.", "error");
+            loadingOverlay.style.display = 'none';
+        }
+    }
+
+    // Setup listener real-time untuk PELANGGAN
+    function setupSnapshotListener() {
+        if (unsubscribeSnap) {
+            unsubscribeSnap();
+        }
+
+        unsubscribeSnap = onSnapshot(customersCollection, (snapshot) => {
+            customersData = [];
+            snapshot.forEach((doc) => {
+                customersData.push({ id: doc.id, ...doc.data() });
+            });
+            
+            customersData.sort((a, b) => a.nama.localeCompare(b.nama));
+            
+            renderCustomers(currentFilter);
+            calculateTotalBill();
+            updateFilterCounts();
+            updateAnalytics();
+            updateChart(); // UPDATE CHART SETIAP ADA PERUBAHAN DATA
+            
+            loadingOverlay.style.display = 'none';
+            
+        }, (error) => {
+            console.error("Error listening to snapshot:", error);
+            showInfoModal("Error mengambil data real-time.", "error");
+            loadingOverlay.style.display = 'none';
+        });
+    }
+    
+    // Setup listener real-time untuk PENGATURAN
+    function setupSettingsListener() {
+        if (unsubscribeSettingsSnap) {
+            unsubscribeSettingsSnap();
+        }
+
+        unsubscribeSettingsSnap = onSnapshot(settingsDocRef, (doc) => {
+            if (doc.exists()) {
+                appSettings = { ...appSettings, ...doc.data() };
+            } else {
+                setDoc(settingsDocRef, appSettings).catch(e => console.error("Could not create default settings", e));
+            }
+            updateUIForSettings();
+        }, (error) => {
+            console.error("Error listening to settings:", error);
+        });
+    }
+    
+    function updateUIForSettings() {
+        appTitleHeader.textContent = appSettings.namaUsaha || "Billing App";
+        document.getElementById('namaUsaha').value = appSettings.namaUsaha;
+        document.getElementById('templateWa').value = appSettings.templateWa;
+    }
+
+    // MODIFIKASI fungsi handlePayment untuk mencatat pembayaran
+    async function handlePayment(isLunas = false) {
+        const id = document.getElementById('paymentCustomerId').value;
+        const totalTagihan = parseFloat(document.getElementById('paymentTotalAmount').value);
+        let jumlahBayar;
+
+        if (isLunas) {
+            jumlahBayar = totalTagihan;
+        } else {
+            jumlahBayar = parseFloat(document.getElementById('paymentAmount').value) || 0;
+        }
+
+        if (jumlahBayar <= 0 && !isLunas && totalTagihan > 0) {
+            showInfoModal('Jumlah bayar tidak valid.', 'error');
+            return;
+        }
+
+        let sisaTunggakan = totalTagihan - jumlahBayar;
+        if (sisaTunggakan < 0) sisaTunggakan = 0;
+
+        try {
+            const customerRef = doc(customersCollection, id);
+            const customer = customersData.find(c => c.id === id);
+            
+            await updateDoc(customerRef, {
+                tunggakan: sisaTunggakan,
+                tagihanBulanIni: 0
+            });
+
+            // CATAT PEMBAYARAN KE HISTORY JIKA ADA BAYAR
+            if (jumlahBayar > 0) {
+                const currentDate = new Date();
+                const bulanTahun = currentDate.toISOString().substring(0, 7); // Format: YYYY-MM
+                
+                await recordPayment(
+                    id, 
+                    customer.nama, 
+                    jumlahBayar, 
+                    isLunas ? 'lunas' : 'manual', 
+                    bulanTahun
                 );
             }
 
-            if (filteredCustomers.length === 0) {
-                emptyState.classList.remove('hidden');
-                customerList.classList.add('hidden');
-            } else {
-                emptyState.classList.add('hidden');
-                customerList.classList.remove('hidden');
-            }
+            showInfoModal('Pembayaran berhasil!');
+            toggleModal('paymentModal', false);
+        } catch (error) {
+            console.error("Error processing payment:", error);
+            showInfoModal('Gagal memproses pembayaran.', 'error');
+        }
+    }
 
-            filteredCustomers.forEach(customer => {
-                const totalTagihan = (customer.tunggakan || 0) + (customer.tagihanBulanIni || 0);
-                const isLunas = totalTagihan === 0;
+    // Fungsi untuk merender daftar pelanggan
+    function renderCustomers(filter) {
+        customerList.innerHTML = '';
+        
+        let filteredCustomers;
+        if (filter === "lunas") {
+            filteredCustomers = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0);
+        } else if (filter === "belum-bayar") {
+            filteredCustomers = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) > 0);
+        } else if (filter === "ada-tunggakan") {
+            filteredCustomers = customersData.filter(c => (c.tunggakan || 0) > 0);
+        } else {
+            filteredCustomers = customersData;
+        }
 
-                const card = document.createElement('div');
-                card.className = `glass-card rounded-xl p-5 flex flex-col justify-between card-hover ${isLunas ? 'status-border-lunas' : 'status-border-tunggak'}`;
-                
-                card.innerHTML = `
-                    <div>
-                        <div class="flex justify-between items-start">
-                            <h3 class="text-lg font-semibold text-gray-800">${customer.nama}</h3>
-                            <div class="flex space-x-1">
-                                <button class="btn-edit p-1 text-gray-400 hover:text-blue-600" data-id="${customer.id}" title="Edit Pelanggan">
-                                    <!-- macOS Edit Icon -->
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+        const searchTerm = document.getElementById('search-bar').value.toLowerCase();
+        if (searchTerm) {
+            filteredCustomers = filteredCustomers.filter(c => 
+                c.nama.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        if (filteredCustomers.length === 0) {
+            emptyState.classList.remove('hidden');
+            customerList.classList.add('hidden');
+        } else {
+            emptyState.classList.add('hidden');
+            customerList.classList.remove('hidden');
+        }
+
+        filteredCustomers.forEach(customer => {
+            const totalTagihan = (customer.tunggakan || 0) + (customer.tagihanBulanIni || 0);
+            const isLunas = totalTagihan === 0;
+
+            const card = document.createElement('div');
+            card.className = `glass-card rounded-xl p-5 flex flex-col justify-between card-hover ${isLunas ? 'status-border-lunas' : 'status-border-tunggak'}`;
+            
+            card.innerHTML = `
+                <div>
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-lg font-semibold text-gray-800">${customer.nama}</h3>
+                        <div class="flex space-x-1">
+                            <button class="btn-edit p-1 text-gray-400 hover:text-blue-600" data-id="${customer.id}" title="Edit Pelanggan">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                            ${!isLunas ? `
+                            <button class="btn-tagih p-1 text-gray-400 hover:text-blue-600" data-id="${customer.id}" title="Buat Tagihan Manual">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                            </button>
+                            ` : ''}
+                            <button class="btn-delete p-1 text-gray-400 hover:text-red-600" data-id="${customer.id}" title="Hapus">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                                    <path d="M3 6h18"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-500">${customer.paket} (${customer.noHp || 'No HP'})</p>
+                    <p class="text-sm text-gray-500 truncate">${customer.alamat || 'Tidak ada alamat'}</p>
+                    
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs text-gray-500">Harga Paket</span>
+                            <span class="text-sm font-medium text-gray-700">${formatRupiah(customer.harga || 0)}</span>
+                        </div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs text-gray-500">Tunggakan</span>
+                            <div class="flex items-center space-x-1">
+                                <span class="text-sm font-medium text-gray-700">${formatRupiah(customer.tunggakan || 0)}</span>
+                                <button class="btn-edit-tunggakan p-1 text-gray-400 hover:text-blue-600" data-id="${customer.id}" data-tunggakan="${customer.tunggakan || 0}" title="Edit Tunggakan">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
                                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                     </svg>
                                 </button>
-                                ${!isLunas ? `
-                                <button class="btn-tagih p-1 text-gray-400 hover:text-blue-600" data-id="${customer.id}" title="Buat Tagihan Manual">
-                                    <!-- macOS Plus Icon -->
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-                                        <line x1="12" y1="5" x2="12" y2="19"/>
-                                        <line x1="5" y1="12" x2="19" y2="12"/>
-                                    </svg>
-                                </button>
-                                ` : ''}
-                                <button class="btn-delete p-1 text-gray-400 hover:text-red-600" data-id="${customer.id}" title="Hapus">
-                                    <!-- macOS Trash Icon -->
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-                                        <path d="M3 6h18"/>
-                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
-                                        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                    </svg>
-                                </button>
                             </div>
                         </div>
-                        <p class="text-sm text-gray-500">${customer.paket} (${customer.noHp || 'No HP'})</p>
-                        <p class="text-sm text-gray-500 truncate">${customer.alamat || 'Tidak ada alamat'}</p>
-                        
-                        <div class="mt-4 pt-4 border-t border-gray-100">
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-xs text-gray-500">Harga Paket</span>
-                                <span class="text-sm font-medium text-gray-700">${formatRupiah(customer.harga || 0)}</span>
-                            </div>
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-xs text-gray-500">Tunggakan</span>
-                                <div class="flex items-center space-x-1">
-                                    <span class="text-sm font-medium text-gray-700">${formatRupiah(customer.tunggakan || 0)}</span>
-                                    <button class="btn-edit-tunggakan p-1 text-gray-400 hover:text-blue-600" data-id="${customer.id}" data-tunggakan="${customer.tunggakan || 0}" title="Edit Tunggakan">
-                                        <!-- macOS Edit Icon (Small) -->
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm font-semibold text-gray-800">Total Tagihan</span>
-                                <span class="text-lg font-bold ${isLunas ? 'text-green-600' : 'text-red-600'}">${formatRupiah(totalTagihan)}</span>
-                            </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-semibold text-gray-800">Total Tagihan</span>
+                            <span class="text-lg font-bold ${isLunas ? 'text-green-600' : 'text-red-600'}">${formatRupiah(totalTagihan)}</span>
                         </div>
                     </div>
+                </div>
 
-                    <div class="mt-5 flex ${isLunas ? 'justify-end' : 'flex-col sm:flex-row'} items-center ${isLunas ? '' : 'space-y-2 sm:space-y-0 sm:space-x-2'}">
-                        ${isLunas ? `
-                            <span class="status-lunas flex items-center">
-                                <!-- macOS Checkmark Icon -->
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-1">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                                    <polyline points="22 4 12 14.01 9 11.01"/>
-                                </svg>
-                                LUNAS
-                            </span>
-                        ` : `
-                            <button class="btn-bayar w-full px-4 py-2 macos-primary text-white rounded-lg text-sm font-medium" data-id="${customer.id}">
-                                <!-- macOS Dollar Icon -->
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="12" y1="1" x2="12" y2="23"/>
-                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                                </svg>
-                                Bayar
-                            </button>
-                            <button class="btn-wa w-full px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500" data-id="${customer.id}">
-                                <!-- macOS Send Icon -->
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="22" y1="2" x2="11" y2="13"/>
-                                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                                </svg>
-                                Kirim WA
-                            </button>
-                            <button class="btn-prorata w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500" data-id="${customer.id}">
-                                <!-- macOS Calendar Icon -->
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                                    <line x1="16" y1="2" x2="16" y2="6"/>
-                                    <line x1="8" y1="2" x2="8" y2="6"/>
-                                    <line x1="3" y1="10" x2="21" y2="10"/>
-                                </svg>
-                                Prorata
-                            </button>
-                        `}
-                    </div>
-                `;
-                
-                customerList.appendChild(card);
-            });
-        }
+                <div class="mt-5 flex ${isLunas ? 'justify-end' : 'flex-col sm:flex-row'} items-center ${isLunas ? '' : 'space-y-2 sm:space-y-0 sm:space-x-2'}">
+                    ${isLunas ? `
+                        <span class="status-lunas flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-1">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                            LUNAS
+                        </span>
+                    ` : `
+                        <button class="btn-bayar w-full px-4 py-2 macos-primary text-white rounded-lg text-sm font-medium" data-id="${customer.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="1" x2="12" y2="23"/>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                            Bayar
+                        </button>
+                        <button class="btn-wa w-full px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500" data-id="${customer.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="22" y1="2" x2="11" y2="13"/>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                            </svg>
+                            Kirim WA
+                        </button>
+                        <button class="btn-prorata w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500" data-id="${customer.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            Prorata
+                        </button>
+                    `}
+                </div>
+            `;
+            
+            customerList.appendChild(card);
+        });
+    }
 
-        // Fungsi utilitas format Rupiah
-        function formatRupiah(angka) {
-            if (angka === null || angka === undefined) angka = 0;
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            }).format(angka);
-        }
+    // Fungsi utilitas format Rupiah
+    function formatRupiah(angka) {
+        if (angka === null || angka === undefined) angka = 0;
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(angka);
+    }
 
-        // Hitung total tagihan header
-        function calculateTotalBill() {
-            const total = customersData.reduce((acc, c) => acc + (c.tunggakan || 0) + (c.tagihanBulanIni || 0), 0);
-            totalTagihanHeader.textContent = `Total Tagihan: ${formatRupiah(total)}`;
-        }
+    // Hitung total tagihan header
+    function calculateTotalBill() {
+        const total = customersData.reduce((acc, c) => acc + (c.tunggakan || 0) + (c.tagihanBulanIni || 0), 0);
+        totalTagihanHeader.textContent = `Total Tagihan: ${formatRupiah(total)}`;
+    }
+    
+    // Update data analitik di Halaman Home
+    function updateAnalytics() {
+        const totalPelanggan = customersData.length;
+        const totalTagihanAktif = customersData.reduce((acc, c) => acc + (c.tunggakan || 0) + (c.tagihanBulanIni || 0), 0);
+        const totalTunggakan = customersData.reduce((acc, c) => acc + (c.tunggakan || 0), 0);
+        const lunasCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0).length;
+        const belumLunasCount = totalPelanggan - lunasCount;
+        const adaTunggakanCount = customersData.filter(c => (c.tunggakan || 0) > 0).length;
         
-        // Update data analitik di Halaman Home
-        function updateAnalytics() {
-            const totalPelanggan = customersData.length;
-            const totalTagihanAktif = customersData.reduce((acc, c) => acc + (c.tunggakan || 0) + (c.tagihanBulanIni || 0), 0);
-            const totalTunggakan = customersData.reduce((acc, c) => acc + (c.tunggakan || 0), 0);
-            const lunasCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0).length;
-            const belumLunasCount = totalPelanggan - lunasCount;
-            const adaTunggakanCount = customersData.filter(c => (c.tunggakan || 0) > 0).length;
-            
-            document.getElementById('analytic-total-tagihan').textContent = formatRupiah(totalTagihanAktif);
-            document.getElementById('analytic-total-pelanggan').textContent = totalPelanggan;
-            document.getElementById('analytic-lunas').textContent = lunasCount;
-            document.getElementById('analytic-belum-lunas').textContent = belumLunasCount;
-            document.getElementById('analytic-total-tunggakan').textContent = formatRupiah(totalTunggakan);
-            document.getElementById('analytic-count-tunggakan').textContent = `${adaTunggakanCount} pelanggan`;
-        }
+        document.getElementById('analytic-total-tagihan').textContent = formatRupiah(totalTagihanAktif);
+        document.getElementById('analytic-total-pelanggan').textContent = totalPelanggan;
+        document.getElementById('analytic-lunas').textContent = lunasCount;
+        document.getElementById('analytic-belum-lunas').textContent = belumLunasCount;
+        document.getElementById('analytic-total-tunggakan').textContent = formatRupiah(totalTunggakan);
+        document.getElementById('analytic-count-tunggakan').textContent = `${adaTunggakanCount} pelanggan`;
+    }
 
-        // Update jumlah count di filter tabs
-        function updateFilterCounts() {
-            const lunasCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0).length;
-            const belumBayarCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) > 0).length;
-            const adaTunggakanCount = customersData.filter(c => (c.tunggakan || 0) > 0).length; // PERBAIKAN: .length bukan array
+    // Update jumlah count di filter tabs
+    function updateFilterCounts() {
+        const lunasCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0).length;
+        const belumBayarCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) > 0).length;
+        const adaTunggakanCount = customersData.filter(c => (c.tunggakan || 0) > 0).length;
 
-            const countLunas = document.getElementById('count-lunas');
-            const countBelumBayar = document.getElementById('count-belum-bayar');
-            const countAdaTunggakan = document.getElementById('count-ada-tunggakan');
+        const countLunas = document.getElementById('count-lunas');
+        const countBelumBayar = document.getElementById('count-belum-bayar');
+        const countAdaTunggakan = document.getElementById('count-ada-tunggakan');
 
-            countLunas.textContent = lunasCount;
-            countBelumBayar.textContent = belumBayarCount;
-            countAdaTunggakan.textContent = adaTunggakanCount; // PERBAIKAN: langsung angka, bukan array
+        countLunas.textContent = lunasCount;
+        countBelumBayar.textContent = belumBayarCount;
+        countAdaTunggakan.textContent = adaTunggakanCount;
 
-            countLunas.classList.toggle('hidden', lunasCount === 0);
-            countBelumBayar.classList.toggle('hidden', belumBayarCount === 0);
-            countAdaTunggakan.classList.toggle('hidden', adaTunggakanCount === 0);
-        }
+        countLunas.classList.toggle('hidden', lunasCount === 0);
+        countBelumBayar.classList.toggle('hidden', belumBayarCount === 0);
+        countAdaTunggakan.classList.toggle('hidden', adaTunggakanCount === 0);
+    }
 
-        // Fungsi toggle modal
-        function toggleModal(modalId, show = true) {
-            const modal = document.getElementById(modalId);
-            if (!modal) return;
-            
-            const content = modal.querySelector('.modal-content');
+    // Fungsi toggle modal
+    function toggleModal(modalId, show = true) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        
+        const content = modal.querySelector('.modal-content');
 
-            if (show) {
-                modal.classList.replace('hidden', 'flex');
-                setTimeout(() => {
-                    if (content) {
-                        content.classList.remove('opacity-0', 'scale-95');
-                        content.classList.add('opacity-100', 'scale-100');
-                    }
-                }, 10);
-            } else {
+        if (show) {
+            modal.classList.replace('hidden', 'flex');
+            setTimeout(() => {
                 if (content) {
-                    content.classList.remove('opacity-100', 'scale-100');
-                    content.classList.add('opacity-0', 'scale-95');
+                    content.classList.remove('opacity-0', 'scale-95');
+                    content.classList.add('opacity-100', 'scale-100');
                 }
-                setTimeout(() => {
-                    modal.classList.replace('flex', 'hidden');
-                }, 300); // Sesuaikan dengan durasi transisi
-            }
-        }
-        
-        // Tampilkan notifikasi
-        function showInfoModal(message, type = "success") {
-            const infoModal = document.getElementById('infoModal');
-            const infoMessage = document.getElementById('infoMessage');
-
-            infoMessage.textContent = message;
-            
-            // Hapus kelas warna sebelumnya
-            infoModal.classList.remove('bg-green-600', 'bg-red-600', 'bg-blue-600');
-
-            if (type === 'error') {
-                infoModal.classList.add('bg-red-600');
-            } else if (type === 'info') {
-                infoModal.classList.add('bg-blue-600');
-            } else {
-                infoModal.classList.add('bg-green-600');
-            }
-
-            infoModal.classList.remove('hidden');
-            setTimeout(() => {
-                infoModal.classList.remove('opacity-0');
             }, 10);
-            
+        } else {
+            if (content) {
+                content.classList.remove('opacity-100', 'scale-100');
+                content.classList.add('opacity-0', 'scale-95');
+            }
             setTimeout(() => {
-                infoModal.classList.add('opacity-0');
-                setTimeout(() => {
-                    infoModal.classList.add('hidden');
-                }, 300);
-            }, 3000);
+                modal.classList.replace('flex', 'hidden');
+            }, 300);
         }
+    }
+    
+    // Tampilkan notifikasi
+    function showInfoModal(message, type = "success") {
+        const infoModal = document.getElementById('infoModal');
+        const infoMessage = document.getElementById('infoMessage');
 
-        // Setup clear search button
-        function setupSearchClear() {
-            const searchInput = document.getElementById('search-bar');
-            const clearButton = document.getElementById('clear-search');
-            
-            searchInput.addEventListener('input', function() {
-                clearButton.classList.toggle('hidden', this.value === '');
-            });
-            
-            clearButton.addEventListener('click', function() {
-                searchInput.value = '';
-                searchInput.focus();
-                clearButton.classList.add('hidden');
-                renderCustomers(currentFilter);
-            });
-        }
-
-        // Tampilkan modal edit tunggakan
-        function showEditTunggakanModal(id, currentTunggakan) {
-            const customer = customersData.find(c => c.id === id);
-            if (!customer) return;
-
-            document.getElementById('editTunggakanCustomerName').textContent = customer.nama;
-            document.getElementById('editTunggakanAmount').value = currentTunggakan || 0;
-            document.getElementById('editTunggakanCustomerId').value = id;
-
-            toggleModal('editTunggakanModal', true);
-        }
-
-        // Simpan perubahan tunggakan
-        async function saveTunggakan() {
-            const id = document.getElementById('editTunggakanCustomerId').value;
-            const jumlahTunggakan = parseFloat(document.getElementById('editTunggakanAmount').value) || 0;
-
-            if (jumlahTunggakan < 0) {
-                showInfoModal('Jumlah tunggakan tidak boleh negatif.', 'error');
-                return;
-            }
-
-            try {
-                const customerRef = doc(customersCollection, id);
-                await updateDoc(customerRef, {
-                    tunggakan: jumlahTunggakan
-                });
-                showInfoModal('Tunggakan berhasil diperbarui!');
-                toggleModal('editTunggakanModal', false);
-            } catch (error) {
-                console.error("Error updating tunggakan:", error);
-                showInfoModal('Gagal memperbarui tunggakan.', 'error');
-            }
-        }
-
-        // Tampilkan modal tambah pelanggan
-        function showCustomerModal(customer = null) {
-            const form = document.getElementById('customerForm');
-            form.reset();
-            document.getElementById('customerId').value = '';
-            
-            if (customer) {
-                // Mode Edit
-                document.getElementById('modalTitle').textContent = 'Edit Pelanggan';
-                document.getElementById('customerId').value = customer.id;
-                document.getElementById('nama').value = customer.nama;
-                document.getElementById('paket').value = customer.paket;
-                document.getElementById('harga').value = customer.harga;
-                document.getElementById('noHp').value = customer.noHp;
-                document.getElementById('alamat').value = customer.alamat;
-            } else {
-                // Mode Tambah
-                document.getElementById('modalTitle').textContent = 'Tambah Pelanggan Baru';
-            }
-            toggleModal('customerModal', true);
-        }
-
-        // Simpan data pelanggan (Tambah/Edit)
-        async function saveCustomer(event) {
-            event.preventDefault();
-            const customerId = document.getElementById('customerId').value;
-            const harga = parseFloat(document.getElementById('harga').value) || 0;
-            const customerData = {
-                nama: document.getElementById('nama').value,
-                paket: document.getElementById('paket').value,
-                harga: harga,
-                noHp: document.getElementById('noHp').value,
-                alamat: document.getElementById('alamat').value,
-            };
-
-            try {
-                if (customerId) {
-                    // Update
-                    const customerRef = doc(customersCollection, customerId);
-                    // Dapatkan data lama untuk menjaga tunggakan
-                    const customerSnap = await getDoc(customerRef);
-                    const existingData = customerSnap.data();
-                    
-                    await updateDoc(customerRef, {
-                        ...customerData,
-                        tunggakan: existingData.tunggakan || 0, // Jaga tunggakan
-                        // Cek jika harga paket berubah, sesuaikan tagihanBulanIni JIKA BELUM LUNAS
-                        tagihanBulanIni: (customerData.harga !== existingData.harga && existingData.tagihanBulanIni > 0) ? customerData.harga : (existingData.tagihanBulanIni || 0), 
-                    });
-                    showInfoModal('Data pelanggan berhasil diperbarui!');
-                } else {
-                    // Add
-                    await addDoc(customersCollection, {
-                        ...customerData,
-                        tunggakan: 0,
-                        tagihanBulanIni: harga, // <-- PERBAIKAN: Tagihan awal = harga
-                        createdAt: new Date().toISOString()
-                    });
-                    showInfoModal('Pelanggan baru berhasil ditambahkan!');
-                }
-                toggleModal('customerModal', false);
-            } catch (error) {
-                console.error("Error saving customer:", error);
-                showInfoModal('Gagal menyimpan data pelanggan.', 'error');
-            }
-        }
-
-        // Tampilkan modal pembayaran
-        function showPaymentModal(id) {
-            const customer = customersData.find(c => c.id === id);
-            if (!customer) return;
-
-            const harga = customer.harga || 0;
-            const tunggakan = customer.tunggakan || 0;
-            const tagihanBulanIni = customer.tagihanBulanIni || 0;
-            const total = tunggakan + tagihanBulanIni; // Total tagihan adalah tunggakan + tagihan bulan ini
-
-            document.getElementById('paymentCustomerName').textContent = customer.nama;
-            document.getElementById('paymentHarga').textContent = formatRupiah(harga); // Ini harga paket
-            document.getElementById('paymentTunggakan').textContent = formatRupiah(tunggakan);
-            document.getElementById('paymentTotal').textContent = formatRupiah(total);
-            
-            document.getElementById('paymentAmount').value = '';
-            document.getElementById('paymentCustomerId').value = id;
-            document.getElementById('paymentTotalAmount').value = total;
-
-            toggleModal('paymentModal', true);
-        }
-
-        // Proses pembayaran (Lunas / Manual)
-        async function handlePayment(isLunas = false) {
-            const id = document.getElementById('paymentCustomerId').value;
-            const totalTagihan = parseFloat(document.getElementById('paymentTotalAmount').value);
-            let jumlahBayar;
-
-            if (isLunas) {
-                jumlahBayar = totalTagihan;
-            } else {
-                jumlahBayar = parseFloat(document.getElementById('paymentAmount').value) || 0;
-            }
-
-            if (jumlahBayar <= 0 && !isLunas && totalTagihan > 0) { // Izinkan bayar 0 jika memang tagihan 0
-                showInfoModal('Jumlah bayar tidak valid.', 'error');
-                return;
-            }
-
-            let sisaTunggakan = totalTagihan - jumlahBayar;
-            if (sisaTunggakan < 0) sisaTunggakan = 0; // Jika bayar lebih, sisa 0 (tidak ada kembalian)
-
-            try {
-                const customerRef = doc(customersCollection, id);
-                await updateDoc(customerRef, {
-                    tunggakan: sisaTunggakan,
-                    tagihanBulanIni: 0 // Tagihan bulan ini lunas (atau jadi tunggakan)
-                });
-                showInfoModal('Pembayaran berhasil!');
-                toggleModal('paymentModal', false);
-            } catch (error) {
-                console.error("Error processing payment:", error);
-                showInfoModal('Gagal memproses pembayaran.', 'error');
-            }
-        }
+        infoMessage.textContent = message;
         
-        // Tampilkan modal tagihan (1 pelanggan)
-        function showTagihanModal(id) {
-            document.getElementById('tagihanCustomerId').value = id;
-            toggleModal('tagihanModal', true);
+        infoModal.classList.remove('bg-green-600', 'bg-red-600', 'bg-blue-600');
+
+        if (type === 'error') {
+            infoModal.classList.add('bg-red-600');
+        } else if (type === 'info') {
+            infoModal.classList.add('bg-blue-600');
+        } else {
+            infoModal.classList.add('bg-green-600');
         }
 
-        // Proses buat tagihan (1 pelanggan)
-        async function generateTagihan() {
-            const id = document.getElementById('tagihanCustomerId').value;
-            const customer = customersData.find(c => c.id === id);
-            if (!customer) return;
+        infoModal.classList.remove('hidden');
+        setTimeout(() => {
+            infoModal.classList.remove('opacity-0');
+        }, 10);
+        
+        setTimeout(() => {
+            infoModal.classList.add('opacity-0');
+            setTimeout(() => {
+                infoModal.classList.add('hidden');
+            }, 300);
+        }, 3000);
+    }
 
-            const hargaPaket = customer.harga || 0;
-            const tagihanBaru = (customer.tagihanBulanIni || 0) + hargaPaket;
+    // Setup clear search button
+    function setupSearchClear() {
+        const searchInput = document.getElementById('search-bar');
+        const clearButton = document.getElementById('clear-search');
+        
+        searchInput.addEventListener('input', function() {
+            clearButton.classList.toggle('hidden', this.value === '');
+        });
+        
+        clearButton.addEventListener('click', function() {
+            searchInput.value = '';
+            searchInput.focus();
+            clearButton.classList.add('hidden');
+            renderCustomers(currentFilter);
+        });
+    }
+
+    // Tampilkan modal edit tunggakan
+    function showEditTunggakanModal(id, currentTunggakan) {
+        const customer = customersData.find(c => c.id === id);
+        if (!customer) return;
+
+        document.getElementById('editTunggakanCustomerName').textContent = customer.nama;
+        document.getElementById('editTunggakanAmount').value = currentTunggakan || 0;
+        document.getElementById('editTunggakanCustomerId').value = id;
+
+        toggleModal('editTunggakanModal', true);
+    }
+
+    // Simpan perubahan tunggakan
+    async function saveTunggakan() {
+        const id = document.getElementById('editTunggakanCustomerId').value;
+        const jumlahTunggakan = parseFloat(document.getElementById('editTunggakanAmount').value) || 0;
+
+        if (jumlahTunggakan < 0) {
+            showInfoModal('Jumlah tunggakan tidak boleh negatif.', 'error');
+            return;
+        }
+
+        try {
+            const customerRef = doc(customersCollection, id);
+            await updateDoc(customerRef, {
+                tunggakan: jumlahTunggakan
+            });
+            showInfoModal('Tunggakan berhasil diperbarui!');
+            toggleModal('editTunggakanModal', false);
+        } catch (error) {
+            console.error("Error updating tunggakan:", error);
+            showInfoModal('Gagal memperbarui tunggakan.', 'error');
+        }
+    }
+
+    // Tampilkan modal tambah pelanggan
+    function showCustomerModal(customer = null) {
+        const form = document.getElementById('customerForm');
+        form.reset();
+        document.getElementById('customerId').value = '';
+        
+        if (customer) {
+            document.getElementById('modalTitle').textContent = 'Edit Pelanggan';
+            document.getElementById('customerId').value = customer.id;
+            document.getElementById('nama').value = customer.nama;
+            document.getElementById('paket').value = customer.paket;
+            document.getElementById('harga').value = customer.harga;
+            document.getElementById('noHp').value = customer.noHp;
+            document.getElementById('alamat').value = customer.alamat;
+        } else {
+            document.getElementById('modalTitle').textContent = 'Tambah Pelanggan Baru';
+        }
+        toggleModal('customerModal', true);
+    }
+
+    // Simpan data pelanggan (Tambah/Edit)
+    async function saveCustomer(event) {
+        event.preventDefault();
+        const customerId = document.getElementById('customerId').value;
+        const harga = parseFloat(document.getElementById('harga').value) || 0;
+        const customerData = {
+            nama: document.getElementById('nama').value,
+            paket: document.getElementById('paket').value,
+            harga: harga,
+            noHp: document.getElementById('noHp').value,
+            alamat: document.getElementById('alamat').value,
+        };
+
+        try {
+            if (customerId) {
+                const customerRef = doc(customersCollection, customerId);
+                const customerSnap = await getDoc(customerRef);
+                const existingData = customerSnap.data();
+                
+                await updateDoc(customerRef, {
+                    ...customerData,
+                    tunggakan: existingData.tunggakan || 0,
+                    tagihanBulanIni: (customerData.harga !== existingData.harga && existingData.tagihanBulanIni > 0) ? customerData.harga : (existingData.tagihanBulanIni || 0), 
+                });
+                showInfoModal('Data pelanggan berhasil diperbarui!');
+            } else {
+                await addDoc(customersCollection, {
+                    ...customerData,
+                    tunggakan: 0,
+                    tagihanBulanIni: harga,
+                    createdAt: new Date().toISOString()
+                });
+                showInfoModal('Pelanggan baru berhasil ditambahkan!');
+            }
+            toggleModal('customerModal', false);
+        } catch (error) {
+            console.error("Error saving customer:", error);
+            showInfoModal('Gagal menyimpan data pelanggan.', 'error');
+        }
+    }
+
+    // Tampilkan modal pembayaran
+    function showPaymentModal(id) {
+        const customer = customersData.find(c => c.id === id);
+        if (!customer) return;
+
+        const harga = customer.harga || 0;
+        const tunggakan = customer.tunggakan || 0;
+        const tagihanBulanIni = customer.tagihanBulanIni || 0;
+        const total = tunggakan + tagihanBulanIni;
+
+        document.getElementById('paymentCustomerName').textContent = customer.nama;
+        document.getElementById('paymentHarga').textContent = formatRupiah(harga);
+        document.getElementById('paymentTunggakan').textContent = formatRupiah(tunggakan);
+        document.getElementById('paymentTotal').textContent = formatRupiah(total);
+        
+        document.getElementById('paymentAmount').value = '';
+        document.getElementById('paymentCustomerId').value = id;
+        document.getElementById('paymentTotalAmount').value = total;
+
+        toggleModal('paymentModal', true);
+    }
+    
+    // Tampilkan modal tagihan (1 pelanggan)
+    function showTagihanModal(id) {
+        document.getElementById('tagihanCustomerId').value = id;
+        toggleModal('tagihanModal', true);
+    }
+
+    // Proses buat tagihan (1 pelanggan)
+    async function generateTagihan() {
+        const id = document.getElementById('tagihanCustomerId').value;
+        const customer = customersData.find(c => c.id === id);
+        if (!customer) return;
+
+        const hargaPaket = customer.harga || 0;
+        const tagihanBaru = (customer.tagihanBulanIni || 0) + hargaPaket;
+
+        try {
+            const customerRef = doc(customersCollection, id);
+            await updateDoc(customerRef, {
+                tagihanBulanIni: tagihanBaru
+            });
+            showInfoModal('Tagihan berhasil dibuat!');
+            toggleModal('tagihanModal', false);
+        } catch (error) {
+            console.error("Error generating tagihan:", error);
+            showInfoModal('Gagal membuat tagihan.', 'error');
+        }
+    }
+
+    // Tampilkan modal prorata
+    function showProrataModal(id) {
+        const customer = customersData.find(c => c.id === id);
+        if (!customer) return;
+
+        document.getElementById('prorataCustomerId').value = id;
+        document.getElementById('prorataHarga').value = customer.harga || 0;
+        
+        document.getElementById('tglMulai').value = '';
+        document.getElementById('tglAkhir').value = '';
+        document.getElementById('hariPeriodik').value = 30;
+        document.getElementById('prorataResult').classList.add('hidden');
+        
+        toggleModal('prorataModal', true);
+    }
+
+    // Hitung prorata saat tanggal berubah
+    function calculateProrata() {
+        const tglMulai = document.getElementById('tglMulai').value;
+        const tglAkhir = document.getElementById('tglAkhir').value;
+        const hariPeriodik = parseInt(document.getElementById('hariPeriodik').value) || 30;
+        const harga = parseFloat(document.getElementById('prorataHarga').value) || 0;
+
+        if (tglMulai && tglAkhir && hariPeriodik > 0) {
+            const dateMulai = new Date(tglMulai);
+            const dateAkhir = new Date(tglAkhir);
+            
+            if (dateAkhir < dateMulai) {
+                document.getElementById('prorataResult').classList.add('hidden');
+                return;
+            }
+
+            const diffTime = Math.abs(dateAkhir - dateMulai);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            
+            const tagihanProrata = (diffDays / hariPeriodik) * harga;
+
+            document.getElementById('prorataHari').textContent = diffDays;
+            document.getElementById('prorataTotal').textContent = formatRupiah(tagihanProrata);
+            document.getElementById('prorataResult').classList.remove('hidden');
+        } else {
+            document.getElementById('prorataResult').classList.add('hidden');
+        }
+    }
+
+    // Buat tagihan prorata
+    async function handleProrata() {
+        const id = document.getElementById('prorataCustomerId').value;
+        const totalText = document.getElementById('prorataTotal').textContent;
+        
+        const tagihanProrata = parseFloat(totalText.replace(/[^0-9]/g, '')) || 0;
+
+        if (tagihanProrata <= 0) {
+            showInfoModal('Tagihan prorata tidak valid.', 'error');
+            return;
+        }
+
+        const customer = customersData.find(c => c.id === id);
+        if (!customer) return;
+
+        const tagihanBaru = (customer.tagihanBulanIni || 0) + tagihanProrata;
+
+        try {
+            const customerRef = doc(customersCollection, id);
+            await updateDoc(customerRef, {
+                tagihanBulanIni: tagihanBaru
+            });
+            showInfoModal('Tagihan prorata berhasil ditambahkan!');
+            toggleModal('prorataModal', false);
+        } catch (error) {
+            console.error("Error creating prorata bill:", error);
+            showInfoModal('Gagal membuat tagihan prorata.', 'error');
+        }
+    }
+    
+    // Tampilkan modal WA
+    function showWaModal(id) {
+        const customer = customersData.find(c => c.id === id);
+        if (!customer) return;
+        
+        let noHp = customer.noHp || '';
+        if (noHp.startsWith('0')) {
+            noHp = '62' + noHp.substring(1);
+        }
+        if (!noHp.startsWith('62')) {
+            showInfoModal('Nomor HP tidak valid. Harus diawali 0 atau 62.', 'error');
+            return;
+        }
+
+        const totalTagihan = (customer.tunggakan || 0) + (customer.tagihanBulanIni || 0);
+        
+        let message = appSettings.templateWa;
+        message = message.replace(/{nama}/g, customer.nama);
+        message = message.replace(/{total_tagihan}/g, formatRupiah(totalTagihan));
+        message = message.replace(/{nama_usaha}/g, appSettings.namaUsaha);
+        
+        const waLink = `https://wa.me/${noHp}?text=${encodeURIComponent(message)}`;
+        
+        document.getElementById('waCustomerName').textContent = customer.nama;
+        document.getElementById('waCustomerPhone').textContent = customer.noHp;
+        document.getElementById('waMessagePreview').value = message;
+        document.getElementById('btn-kirim-wa').href = waLink;
+        
+        toggleModal('waModal', true);
+    }
+    
+    // Copy pesan WA ke clipboard
+    function copyWaMessage() {
+        const message = document.getElementById('waMessagePreview').value;
+        
+        const textarea = document.createElement('textarea');
+        textarea.value = message;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            showInfoModal('Pesan berhasil disalin!');
+        } catch (err) {
+            console.error('Gagal menyalin pesan: ', err);
+            showInfoModal('Gagal menyalin pesan.', 'error');
+        }
+        document.body.removeChild(textarea);
+        toggleModal('waModal', false);
+    }
+
+    // Tampilkan modal hapus
+    function showDeleteModal(id) {
+        document.getElementById('deleteCustomerId').value = id;
+        toggleModal('deleteModal', true);
+    }
+
+    // Hapus pelanggan
+    async function deleteCustomer() {
+        const id = document.getElementById('deleteCustomerId').value;
+        try {
+            await deleteDoc(doc(customersCollection, id));
+            showInfoModal('Pelanggan berhasil dihapus.');
+            toggleModal('deleteModal', false);
+        } catch (error) {
+            console.error("Error deleting customer:", error);
+            showInfoModal('Gagal menghapus pelanggan.', 'error');
+        }
+    }
+
+    // Tampilkan modal hapus SEMUA
+    function showDeleteSemuaModal() {
+        toggleModal('deleteSemuaModal', true);
+        toggleModal('kebab-menu-modal', false);
+    }
+
+    // Hapus SEMUA pelanggan
+    async function deleteAllCustomers() {
+        toggleModal('deleteSemuaModal', false);
+        loadingOverlay.style.display = 'flex';
+
+        try {
+            const querySnap = await getDocs(customersCollection);
+            const batch = writeBatch(db);
+            
+            querySnap.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
+
+            await batch.commit();
+            showInfoModal('SEMUA data pelanggan telah dihapus.');
+        } catch (error) {
+            console.error("Error deleting all customers:", error);
+            showInfoModal('Gagal menghapus semua data.', 'error');
+        } finally {
+            loadingOverlay.style.display = 'none';
+        }
+    }
+
+    // Tampilkan modal import
+    function showImportModal() {
+        document.getElementById('excelFile').value = '';
+        toggleModal('importModal', true);
+        toggleModal('kebab-menu-modal', false);
+    }
+
+    // Import data dari Excel
+    function importExcel() {
+        const fileInput = document.getElementById('excelFile');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            showInfoModal('Silakan pilih file Excel terlebih dahulu.', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = async (event) => {
+            loadingOverlay.style.display = 'flex';
+            toggleModal('importModal', false);
 
             try {
-                const customerRef = doc(customersCollection, id);
-                await updateDoc(customerRef, {
-                    tagihanBulanIni: tagihanBaru
-                });
-                showInfoModal('Tagihan berhasil dibuat!');
-                toggleModal('tagihanModal', false);
-            } catch (error) {
-                console.error("Error generating tagihan:", error);
-                showInfoModal('Gagal membuat tagihan.', 'error');
-            }
-        }
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-        // Tampilkan modal prorata
-        function showProrataModal(id) {
-            const customer = customersData.find(c => c.id === id);
-            if (!customer) return;
-
-            document.getElementById('prorataCustomerId').value = id;
-            document.getElementById('prorataHarga').value = customer.harga || 0;
-            
-            // Reset form
-            document.getElementById('tglMulai').value = '';
-            document.getElementById('tglAkhir').value = '';
-            document.getElementById('hariPeriodik').value = 30;
-            document.getElementById('prorataResult').classList.add('hidden');
-            
-            toggleModal('prorataModal', true);
-        }
-
-        // Hitung prorata saat tanggal berubah
-        function calculateProrata() {
-            const tglMulai = document.getElementById('tglMulai').value;
-            const tglAkhir = document.getElementById('tglAkhir').value;
-            const hariPeriodik = parseInt(document.getElementById('hariPeriodik').value) || 30;
-            const harga = parseFloat(document.getElementById('prorataHarga').value) || 0;
-
-            if (tglMulai && tglAkhir && hariPeriodik > 0) {
-                const dateMulai = new Date(tglMulai);
-                const dateAkhir = new Date(tglAkhir);
-                
-                if (dateAkhir < dateMulai) {
-                    document.getElementById('prorataResult').classList.add('hidden');
+                if (json.length < 2) {
+                    showInfoModal('File Excel kosong atau tidak valid.', 'error');
                     return;
                 }
 
-                const diffTime = Math.abs(dateAkhir - dateMulai);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Termasuk hari mulai
+                const headers = json[0].map(h => (h || '').toString().toLowerCase());
+                const requiredHeaders = ['nama', 'paket', 'harga', 'no hp', 'alamat'];
                 
-                const tagihanProrata = (diffDays / hariPeriodik) * harga;
-
-                document.getElementById('prorataHari').textContent = diffDays;
-                document.getElementById('prorataTotal').textContent = formatRupiah(tagihanProrata);
-                document.getElementById('prorataResult').classList.remove('hidden');
-            } else {
-                document.getElementById('prorataResult').classList.add('hidden');
-            }
-        }
-
-        // Buat tagihan prorata
-        async function handleProrata() {
-            const id = document.getElementById('prorataCustomerId').value;
-            const totalText = document.getElementById('prorataTotal').textContent;
-            
-            // Konversi format Rupiah (Rp 123.456) ke angka (123456)
-            const tagihanProrata = parseFloat(totalText.replace(/[^0-9]/g, '')) || 0;
-
-            if (tagihanProrata <= 0) {
-                showInfoModal('Tagihan prorata tidak valid.', 'error');
-                return;
-            }
-
-            const customer = customersData.find(c => c.id === id);
-            if (!customer) return;
-
-            const tagihanBaru = (customer.tagihanBulanIni || 0) + tagihanProrata;
-
-            try {
-                const customerRef = doc(customersCollection, id);
-                await updateDoc(customerRef, {
-                    tagihanBulanIni: tagihanBaru
-                });
-                showInfoModal('Tagihan prorata berhasil ditambahkan!');
-                toggleModal('prorataModal', false);
-            } catch (error) {
-                console.error("Error creating prorata bill:", error);
-                showInfoModal('Gagal membuat tagihan prorata.', 'error');
-            }
-        }
-        
-        // Tampilkan modal WA
-        function showWaModal(id) {
-            const customer = customersData.find(c => c.id === id);
-            if (!customer) return;
-            
-            let noHp = customer.noHp || '';
-            // Format nomor HP (pastikan depannya 62, bukan 0)
-            if (noHp.startsWith('0')) {
-                noHp = '62' + noHp.substring(1);
-            }
-            if (!noHp.startsWith('62')) {
-                showInfoModal('Nomor HP tidak valid. Harus diawali 0 atau 62.', 'error');
-                return;
-            }
-
-            const totalTagihan = (customer.tunggakan || 0) + (customer.tagihanBulanIni || 0);
-            
-            let message = appSettings.templateWa;
-            message = message.replace(/{nama}/g, customer.nama);
-            message = message.replace(/{total_tagihan}/g, formatRupiah(totalTagihan));
-            message = message.replace(/{nama_usaha}/g, appSettings.namaUsaha);
-            
-            const waLink = `https://wa.me/${noHp}?text=${encodeURIComponent(message)}`;
-            
-            document.getElementById('waCustomerName').textContent = customer.nama;
-            document.getElementById('waCustomerPhone').textContent = customer.noHp;
-            document.getElementById('waMessagePreview').value = message;
-            document.getElementById('btn-kirim-wa').href = waLink;
-            
-            toggleModal('waModal', true);
-        }
-        
-        // Copy pesan WA ke clipboard
-        function copyWaMessage() {
-            const message = document.getElementById('waMessagePreview').value;
-            
-            // Trik untuk menyalin teks
-            const textarea = document.createElement('textarea');
-            textarea.value = message;
-            document.body.appendChild(textarea);
-            textarea.select();
-            try {
-                document.execCommand('copy');
-                showInfoModal('Pesan berhasil disalin!');
-            } catch (err) {
-                console.error('Gagal menyalin pesan: ', err);
-                showInfoModal('Gagal menyalin pesan.', 'error');
-            }
-            document.body.removeChild(textarea);
-            toggleModal('waModal', false);
-        }
-
-        // Tampilkan modal hapus
-        function showDeleteModal(id) {
-            document.getElementById('deleteCustomerId').value = id;
-            toggleModal('deleteModal', true);
-        }
-
-        // Hapus pelanggan
-        async function deleteCustomer() {
-            const id = document.getElementById('deleteCustomerId').value;
-            try {
-                await deleteDoc(doc(customersCollection, id));
-                showInfoModal('Pelanggan berhasil dihapus.');
-                toggleModal('deleteModal', false);
-            } catch (error) {
-                console.error("Error deleting customer:", error);
-                showInfoModal('Gagal menghapus pelanggan.', 'error');
-            }
-        }
-
-        // Tampilkan modal hapus SEMUA
-        function showDeleteSemuaModal() {
-            toggleModal('deleteSemuaModal', true);
-            toggleModal('kebab-menu-modal', false); // Tutup kebab menu
-        }
-
-        // Hapus SEMUA pelanggan
-        async function deleteAllCustomers() {
-            toggleModal('deleteSemuaModal', false);
-            loadingOverlay.style.display = 'flex';
-
-            try {
-                const querySnap = await getDocs(customersCollection);
-                const batch = writeBatch(db);
-                
-                querySnap.forEach((doc) => {
-                    batch.delete(doc.ref);
+                const colIndex = {};
+                requiredHeaders.forEach(rh => {
+                    colIndex[rh] = headers.indexOf(rh);
                 });
 
-                await batch.commit();
-                showInfoModal('SEMUA data pelanggan telah dihapus.');
-            } catch (error) {
-                console.error("Error deleting all customers:", error);
-                showInfoModal('Gagal menghapus semua data.', 'error');
-            } finally {
-                loadingOverlay.style.display = 'none';
-            }
-        }
-
-        // Tampilkan modal import
-        function showImportModal() {
-            document.getElementById('excelFile').value = ''; // Reset file input
-            toggleModal('importModal', true);
-            toggleModal('kebab-menu-modal', false); // Tutup kebab menu
-        }
-
-        // Import data dari Excel
-        function importExcel() {
-            const fileInput = document.getElementById('excelFile');
-            const file = fileInput.files[0];
-            
-            if (!file) {
-                showInfoModal('Silakan pilih file Excel terlebih dahulu.', 'error');
-                return;
-            }
-
-            const reader = new FileReader();
-
-            reader.onload = async (event) => {
-                loadingOverlay.style.display = 'flex'; // Tampilkan loading
-                toggleModal('importModal', false); // Tutup modal
-
-                try {
-                    const data = new Uint8Array(event.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                    if (json.length < 2) {
-                        showInfoModal('File Excel kosong atau tidak valid.', 'error');
-                        return; // finally akan dijalankan
-                    }
-
-                    // Ambil header dan normalisasi (ubah ke huruf kecil, tangani null/undefined)
-                    const headers = json[0].map(h => (h || '').toString().toLowerCase());
-                    const requiredHeaders = ['nama', 'paket', 'harga', 'no hp', 'alamat'];
-                    
-                    // Cari indeks kolom berdasarkan header
-                    const colIndex = {};
-                    requiredHeaders.forEach(rh => {
-                        colIndex[rh] = headers.indexOf(rh);
-                    });
-
-                    // Cek header wajib
-                    if (colIndex['nama'] === -1 || colIndex['harga'] === -1) {
-                        showInfoModal('Format Excel salah. Pastikan ada kolom NAMA dan HARGA.', 'error');
-                        return; // finally akan dijalankan
-                    }
-
-                    // Hapus baris header
-                    json.shift(); 
-                    
-                    const batch = writeBatch(db);
-                    let importCount = 0;
-                    
-                    json.forEach(row => {
-                        const nama = row[colIndex['nama']];
-                        const harga = row[colIndex['harga']];
-
-                        // Hanya proses jika NAMA dan HARGA ada
-                        if (nama && harga) {
-                            const hargaNum = parseFloat(harga) || 0;
-                            const newCustomer = {
-                                nama: (nama || '').toString(),
-                                paket: colIndex['paket'] !== -1 ? (row[colIndex['paket']] || '').toString() : '',
-                                harga: hargaNum,
-                                noHp: colIndex['no hp'] !== -1 ? (row[colIndex['no hp']] || '').toString() : '',
-                                alamat: colIndex['alamat'] !== -1 ? (row[colIndex['alamat']] || '').toString() : '',
-                                tunggakan: 0,
-                                tagihanBulanIni: hargaNum, // <-- PERBAIKAN: Tagihan awal = harga
-                                createdAt: new Date().toISOString()
-                            };
-                            
-                            const docRef = doc(customersCollection); // Buat referensi doc baru
-                            batch.set(docRef, newCustomer);
-                            importCount++;
-                        }
-                    });
-
-                    await batch.commit();
-                    showInfoModal(`${importCount} pelanggan berhasil diimpor!`);
-
-                } catch (error) {
-                    console.error("Error batch importing data:", error);
-                    showInfoModal('Gagal mengimpor data. Cek format file.', 'error');
-                } finally {
-                    loadingOverlay.style.display = 'none'; // Pastikan loading ditutup
+                if (colIndex['nama'] === -1 || colIndex['harga'] === -1) {
+                    showInfoModal('Format Excel salah. Pastikan ada kolom NAMA dan HARGA.', 'error');
+                    return;
                 }
-            };
-            
-            reader.onerror = () => {
-                showInfoModal('Gagal membaca file.', 'error');
-                loadingOverlay.style.display = 'none';
-            };
 
-            reader.readAsArrayBuffer(file);
-        }
-
-        // Buat tagihan untuk SEMUA pelanggan
-        async function generateTagihanSemua() {
-            toggleModal('kebab-menu-modal', false);
-            loadingOverlay.style.display = 'flex';
-
-            try {
-                const batch = writeBatch(db);
+                json.shift(); 
                 
-                customersData.forEach(customer => {
-                    const hargaPaket = customer.harga || 0;
-                    // Tagihan baru = tunggakan lama + tagihan bulan ini + harga paket baru
-                    // Kita pindahkan tagihanBulanIni ke tunggakan, lalu set tagihanBulanIni = hargaPaket
-                    const tunggakanBaru = (customer.tunggakan || 0) + (customer.tagihanBulanIni || 0);
-                    const tagihanBulanIniBaru = hargaPaket;
-                    
-                    const docRef = doc(customersCollection, customer.id);
-                    batch.update(docRef, {
-                        tunggakan: tunggakanBaru,
-                        tagihanBulanIni: tagihanBulanIniBaru
-                    });
+                const batch = writeBatch(db);
+                let importCount = 0;
+                
+                json.forEach(row => {
+                    const nama = row[colIndex['nama']];
+                    const harga = row[colIndex['harga']];
+
+                    if (nama && harga) {
+                        const hargaNum = parseFloat(harga) || 0;
+                        const newCustomer = {
+                            nama: (nama || '').toString(),
+                            paket: colIndex['paket'] !== -1 ? (row[colIndex['paket']] || '').toString() : '',
+                            harga: hargaNum,
+                            noHp: colIndex['no hp'] !== -1 ? (row[colIndex['no hp']] || '').toString() : '',
+                            alamat: colIndex['alamat'] !== -1 ? (row[colIndex['alamat']] || '').toString() : '',
+                            tunggakan: 0,
+                            tagihanBulanIni: hargaNum,
+                            createdAt: new Date().toISOString()
+                        };
+                        
+                        const docRef = doc(customersCollection);
+                        batch.set(docRef, newCustomer);
+                        importCount++;
+                    }
                 });
 
                 await batch.commit();
-                showInfoModal('Tagihan baru berhasil dibuat untuk semua pelanggan!');
+                showInfoModal(`${importCount} pelanggan berhasil diimpor!`);
+
             } catch (error) {
-                console.error("Error generating all bills:", error);
-                showInfoModal('Gagal membuat tagihan massal.', 'error');
+                console.error("Error batch importing data:", error);
+                showInfoModal('Gagal mengimpor data. Cek format file.', 'error');
             } finally {
                 loadingOverlay.style.display = 'none';
             }
-        }
+        };
         
-        // Simpan Pengaturan
-        async function saveSettings(event) {
-            event.preventDefault();
-            const namaUsaha = document.getElementById('namaUsaha').value;
-            const templateWa = document.getElementById('templateWa').value;
+        reader.onerror = () => {
+            showInfoModal('Gagal membaca file.', 'error');
+            loadingOverlay.style.display = 'none';
+        };
+
+        reader.readAsArrayBuffer(file);
+    }
+
+    // Buat tagihan untuk SEMUA pelanggan
+    async function generateTagihanSemua() {
+        toggleModal('kebab-menu-modal', false);
+        loadingOverlay.style.display = 'flex';
+
+        try {
+            const batch = writeBatch(db);
             
-            const newSettings = {
-                namaUsaha: namaUsaha,
-                templateWa: templateWa
-            };
-            
-            try {
-                await setDoc(settingsDocRef, newSettings, { merge: true });
-                showInfoModal('Pengaturan berhasil disimpan!');
-            } catch (error) {
-                console.error("Error saving settings:", error);
-                showInfoModal('Gagal menyimpan pengaturan.', 'error');
-            }
+            customersData.forEach(customer => {
+                const hargaPaket = customer.harga || 0;
+                const tunggakanBaru = (customer.tunggakan || 0) + (customer.tagihanBulanIni || 0);
+                const tagihanBulanIniBaru = hargaPaket;
+                
+                const docRef = doc(customersCollection, customer.id);
+                batch.update(docRef, {
+                    tunggakan: tunggakanBaru,
+                    tagihanBulanIni: tagihanBulanIniBaru
+                });
+            });
+
+            await batch.commit();
+            showInfoModal('Tagihan baru berhasil dibuat untuk semua pelanggan!');
+        } catch (error) {
+            console.error("Error generating all bills:", error);
+            showInfoModal('Gagal membuat tagihan massal.', 'error');
+        } finally {
+            loadingOverlay.style.display = 'none';
+        }
+    }
+    
+    // Simpan Pengaturan
+    async function saveSettings(event) {
+        event.preventDefault();
+        const namaUsaha = document.getElementById('namaUsaha').value;
+        const templateWa = document.getElementById('templateWa').value;
+        
+        const newSettings = {
+            namaUsaha: namaUsaha,
+            templateWa: templateWa
+        };
+        
+        try {
+            await setDoc(settingsDocRef, newSettings, { merge: true });
+            showInfoModal('Pengaturan berhasil disimpan!');
+        } catch (error) {
+            console.error("Error saving settings:", error);
+            showInfoModal('Gagal menyimpan pengaturan.', 'error');
+        }
+    }
+
+    // Fungsi untuk navigasi antar tab
+    function navigateToTab(pageId, filter = null) {
+        const navButton = document.querySelector(`.btn-nav[data-page="${pageId}"]`);
+        if (navButton) {
+            navButton.click();
         }
 
-        // Fungsi untuk navigasi antar tab
-        function navigateToTab(pageId, filter = null) {
-            // 1. Klik tombol nav yang sesuai
-            const navButton = document.querySelector(`.btn-nav[data-page="${pageId}"]`);
-            if (navButton) {
-                navButton.click();
-            }
-
-            // 2. Jika ada filter, terapkan
-            if (pageId === 'pelanggan' && filter) {
-                // Beri sedikit waktu agar halaman pelanggan di-render
-                setTimeout(() => {
-                    const filterButton = document.querySelector(`.tab-filter[data-filter="${filter}"]`);
-                    if (filterButton) {
-                        filterButton.click();
-                    }
-                }, 50); // 50ms delay
-            }
+        if (pageId === 'pelanggan' && filter) {
+            setTimeout(() => {
+                const filterButton = document.querySelector(`.tab-filter[data-filter="${filter}"]`);
+                if (filterButton) {
+                    filterButton.click();
+                }
+            }, 50);
         }
+    }
 
-        // =============================================
-        // EVENT LISTENERS (Digabungkan)
-        // =============================================
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- Logika Kunci Sandi ---
-            checkURLReset(); // Cek reset password dari URL
-            initializeLockScreen(); // Siapkan layar kunci
-            lockForm.addEventListener('submit', handleLogin); // Listener untuk form login
+    // =============================================
+    // EVENT LISTENERS
+    // =============================================
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Logika Kunci Sandi ---
+        checkURLReset();
+        initializeLockScreen();
+        lockForm.addEventListener('submit', handleLogin);
 
-            // --- Setup Clear Search ---
-            setupSearchClear();
+        // --- Setup Clear Search ---
+        setupSearchClear();
 
-            // --- Event Listener Navigasi Tab Bawah ---
-            const pages = document.querySelectorAll('.page');
-            const navButtons = document.querySelectorAll('.btn-nav');
-            
-            navButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const pageId = button.dataset.page;
-                    
-                    // Sembunyikan semua halaman
-                    pages.forEach(page => page.classList.remove('active'));
-                    // Tampilkan halaman yang diklik
-                    document.getElementById(`page-${pageId}`).classList.add('active');
-                    
-                    // Update status aktif tombol nav
-                    navButtons.forEach(btn => {
-                        btn.classList.add('text-gray-500', 'hover:text-blue-500');
-                        btn.classList.remove('text-blue-500');
-                        // Ganti ikon ke outline (jika ada)
-                        const svg = btn.querySelector('svg');
-                        if (svg) {
-                            svg.innerHTML = svg.innerHTML.replace('fill="currentColor"', 'fill="none" stroke-width="1.5" stroke="currentColor"');
-                        }
-                    });
-                    
-                    button.classList.add('text-blue-500');
-                    button.classList.remove('text-gray-500', 'hover:text-blue-500');
-                    // Ganti ikon ke solid (jika ada)
-                    const svg = button.querySelector('svg');
+        // --- Event Listener untuk Chart Type ---
+        document.getElementById('chartType').addEventListener('change', updateChart);
+
+        // --- Event Listener Navigasi Tab Bawah ---
+        const pages = document.querySelectorAll('.page');
+        const navButtons = document.querySelectorAll('.btn-nav');
+        
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const pageId = button.dataset.page;
+                
+                pages.forEach(page => page.classList.remove('active'));
+                document.getElementById(`page-${pageId}`).classList.add('active');
+                
+                navButtons.forEach(btn => {
+                    btn.classList.add('text-gray-500', 'hover:text-blue-500');
+                    btn.classList.remove('text-blue-500');
+                    const svg = btn.querySelector('svg');
                     if (svg) {
-                        svg.innerHTML = svg.innerHTML.replace('fill="none" stroke-width="1.5" stroke="currentColor"', 'fill="currentColor"');
-                    }
-                    
-                    // Perbarui analitik jika pindah ke Home
-                    if(pageId === 'home') {
-                        updateAnalytics();
-                    }
-                    
-                    // Tampilkan FAB hanya di halaman pelanggan
-                    document.getElementById('fab-tambah-pelanggan').classList.toggle('hidden', pageId !== 'pelanggan');
-                });
-            });
-            // Sembunyikan FAB di awal (karena Home yang aktif)
-            document.getElementById('fab-tambah-pelanggan').classList.add('hidden');
-            // Aktifkan ikon Home secara manual di awal
-            const homeNavButton = document.querySelector('.btn-nav[data-page="home"] svg');
-            if(homeNavButton) {
-                 homeNavButton.innerHTML = homeNavButton.innerHTML.replace('fill="none" stroke-width="1.5" stroke="currentColor"', 'fill="currentColor"');
-            }
-
-            // --- Event Listener untuk Modals ---
-            
-            // PERBAIKAN: Tombol Batal dengan selector yang benar
-            document.querySelectorAll('button[data-modal]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const modalId = btn.dataset.modal;
-                    toggleModal(modalId, false);
-                });
-            });
-            
-            // Klik di luar modal (backdrop)
-            document.querySelectorAll('.modal-backdrop').forEach(modal => {
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) {
-                        toggleModal(modal.id, false);
+                        svg.innerHTML = svg.innerHTML.replace('fill="currentColor"', 'fill="none" stroke-width="1.5" stroke="currentColor"');
                     }
                 });
-            });
-
-            // --- Event Listener Kebab Menu ---
-            const kebabMenuButton = document.getElementById('kebab-menu-button');
-            const kebabMenuModal = document.getElementById('kebab-menu-modal');
-            kebabMenuButton.addEventListener('click', () => {
-                kebabMenuModal.classList.toggle('hidden');
-            });
-            
-            // Tutup kebab menu jika klik di luar
-            document.addEventListener('click', (e) => {
-                if (!kebabMenuButton.contains(e.target) && !kebabMenuModal.contains(e.target)) {
-                    kebabMenuModal.classList.add('hidden');
-                }
-            });
-
-            // Tombol di dalam Kebab Menu
-            document.getElementById('import-excel-btn-menu').addEventListener('click', showImportModal);
-            document.getElementById('buat-tagihan-semua-btn-menu').addEventListener('click', generateTagihanSemua);
-            document.getElementById('hapus-semua-btn-menu').addEventListener('click', showDeleteSemuaModal);
-            document.getElementById('btn-import-excel').addEventListener('click', importExcel);
-            document.getElementById('btn-konfirmasi-hapus-semua').addEventListener('click', deleteAllCustomers);
-            
-            // --- Event Listener Filter Tabs (Pelanggan) ---
-            const filterNav = document.getElementById('filter-nav');
-            filterNav.addEventListener('click', (e) => {
-                const target = e.target.closest('.tab-filter');
-                if (!target) return;
                 
-                const filter = target.dataset.filter;
-                currentFilter = filter;
+                button.classList.add('text-blue-500');
+                button.classList.remove('text-gray-500', 'hover:text-blue-500');
+                const svg = button.querySelector('svg');
+                if (svg) {
+                    svg.innerHTML = svg.innerHTML.replace('fill="none" stroke-width="1.5" stroke="currentColor"', 'fill="currentColor"');
+                }
                 
-                // Update UI Tab
-                filterNav.querySelectorAll('.tab-filter').forEach(tab => {
-                    tab.classList.remove('active');
-                    tab.classList.add('text-gray-500', 'hover:text-gray-700');
-                });
-                target.classList.add('active');
-                target.classList.remove('text-gray-500', 'hover:text-gray-700');
+                if(pageId === 'home') {
+                    updateAnalytics();
+                    updateChart(); // UPDATE CHART SAAT KE HALAMAN HOME
+                }
                 
-                // Render ulang list
-                renderCustomers(currentFilter);
+                document.getElementById('fab-tambah-pelanggan').classList.toggle('hidden', pageId !== 'pelanggan');
             });
+        });
+        
+        document.getElementById('fab-tambah-pelanggan').classList.add('hidden');
+        const homeNavButton = document.querySelector('.btn-nav[data-page="home"] svg');
+        if(homeNavButton) {
+             homeNavButton.innerHTML = homeNavButton.innerHTML.replace('fill="none" stroke-width="1.5" stroke="currentColor"', 'fill="currentColor"');
+        }
 
-            // --- Event Listener Search Bar ---
-            document.getElementById('search-bar').addEventListener('input', () => {
-                renderCustomers(currentFilter);
+        // --- Event Listener untuk Modals ---
+        document.querySelectorAll('button[data-modal]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const modalId = btn.dataset.modal;
+                toggleModal(modalId, false);
             });
-
-            // --- Event Listener Home Analytic Cards ---
-            document.getElementById('analytic-card-total').addEventListener('click', () => {
-                navigateToTab('pelanggan', 'semua');
-            });
-            document.getElementById('analytic-card-belum-lunas').addEventListener('click', () => {
-                navigateToTab('pelanggan', 'belum-bayar');
-            });
-            document.getElementById('analytic-card-tunggakan').addEventListener('click', () => {
-                navigateToTab('pelanggan', 'ada-tunggakan');
-            });
-
-            // --- Event Listener Form ---
-            document.getElementById('customerForm').addEventListener('submit', saveCustomer);
-            document.getElementById('fab-tambah-pelanggan').addEventListener('click', () => showCustomerModal());
-            document.getElementById('tambah-pelanggan-empty').addEventListener('click', () => showCustomerModal());
-            document.getElementById('settingsForm').addEventListener('submit', saveSettings);
-            
-            // Edit Tunggakan Modal
-            document.getElementById('btn-simpan-tunggakan').addEventListener('click', saveTunggakan);
-            
-            // Payment Modal
-            document.getElementById('btn-bayar-lunas').addEventListener('click', () => handlePayment(true));
-            document.getElementById('btn-bayar-manual').addEventListener('click', () => handlePayment(false));
-
-            // Prorata Modal
-            document.getElementById('tglMulai').addEventListener('change', calculateProrata);
-            document.getElementById('tglAkhir').addEventListener('change', calculateProrata);
-            document.getElementById('hariPeriodik').addEventListener('input', calculateProrata);
-            document.getElementById('btn-buat-prorata').addEventListener('click', handleProrata);
-            
-            // WA Modal
-            document.getElementById('btn-copy-wa').addEventListener('click', copyWaMessage);
-            
-            // Tagihan & Delete Modals
-            document.getElementById('btn-konfirmasi-tagihan').addEventListener('click', generateTagihan);
-            document.getElementById('btn-konfirmasi-hapus').addEventListener('click', deleteCustomer);
-            
-            // --- Event Listener Dinamis (delegasi event) ---
-            customerList.addEventListener('click', (e) => {
-                const target = e.target.closest('button');
-                if (!target) return;
-
-                const id = target.dataset.id;
-                
-                if (target.classList.contains('btn-edit')) {
-                    const customer = customersData.find(c => c.id === id);
-                    showCustomerModal(customer);
-                }
-                if (target.classList.contains('btn-edit-tunggakan')) {
-                    const currentTunggakan = parseFloat(target.dataset.tunggakan) || 0;
-                    showEditTunggakanModal(id, currentTunggakan);
-                }
-                if (target.classList.contains('btn-delete')) {
-                    showDeleteModal(id);
-                }
-                if (target.classList.contains('btn-bayar')) {
-                    showPaymentModal(id);
-                }
-                if (target.classList.contains('btn-tagih')) {
-                    showTagihanModal(id);
-                }
-                if (target.classList.contains('btn-prorata')) {
-                    showProrataModal(id);
-                }
-                if (target.classList.contains('btn-wa')) {
-                    showWaModal(id);
+        });
+        
+        document.querySelectorAll('.modal-backdrop').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    toggleModal(modal.id, false);
                 }
             });
+        });
 
-            // --- Dark Mode Toggle ---
-            const darkModeToggle = document.getElementById('darkModeToggle');
-            darkModeToggle.addEventListener('click', () => {
-                document.body.classList.toggle('dark');
-                localStorage.setItem('darkMode', document.body.classList.contains('dark'));
-            });
-
-            // Apply saved theme on load
-            if (localStorage.getItem('darkMode') === 'true') {
-                document.body.classList.add('dark');
+        // --- Event Listener Kebab Menu ---
+        const kebabMenuButton = document.getElementById('kebab-menu-button');
+        const kebabMenuModal = document.getElementById('kebab-menu-modal');
+        kebabMenuButton.addEventListener('click', () => {
+            kebabMenuModal.classList.toggle('hidden');
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!kebabMenuButton.contains(e.target) && !kebabMenuModal.contains(e.target)) {
+                kebabMenuModal.classList.add('hidden');
             }
         });
-    </script>
+
+        // Tombol di dalam Kebab Menu
+        document.getElementById('import-excel-btn-menu').addEventListener('click', showImportModal);
+        document.getElementById('buat-tagihan-semua-btn-menu').addEventListener('click', generateTagihanSemua);
+        document.getElementById('hapus-semua-btn-menu').addEventListener('click', showDeleteSemuaModal);
+        document.getElementById('btn-import-excel').addEventListener('click', importExcel);
+        document.getElementById('btn-konfirmasi-hapus-semua').addEventListener('click', deleteAllCustomers);
+        
+        // --- Event Listener Filter Tabs (Pelanggan) ---
+        const filterNav = document.getElementById('filter-nav');
+        filterNav.addEventListener('click', (e) => {
+            const target = e.target.closest('.tab-filter');
+            if (!target) return;
+            
+            const filter = target.dataset.filter;
+            currentFilter = filter;
+            
+            filterNav.querySelectorAll('.tab-filter').forEach(tab => {
+                tab.classList.remove('active');
+                tab.classList.add('text-gray-500', 'hover:text-gray-700');
+            });
+            target.classList.add('active');
+            target.classList.remove('text-gray-500', 'hover:text-gray-700');
+            
+            renderCustomers(currentFilter);
+        });
+
+        // --- Event Listener Search Bar ---
+        document.getElementById('search-bar').addEventListener('input', () => {
+            renderCustomers(currentFilter);
+        });
+
+        // --- Event Listener Home Analytic Cards ---
+        document.getElementById('analytic-card-total').addEventListener('click', () => {
+            navigateToTab('pelanggan', 'semua');
+        });
+        document.getElementById('analytic-card-belum-lunas').addEventListener('click', () => {
+            navigateToTab('pelanggan', 'belum-bayar');
+        });
+        document.getElementById('analytic-card-tunggakan').addEventListener('click', () => {
+            navigateToTab('pelanggan', 'ada-tunggakan');
+        });
+
+        // --- Event Listener Form ---
+        document.getElementById('customerForm').addEventListener('submit', saveCustomer);
+        document.getElementById('fab-tambah-pelanggan').addEventListener('click', () => showCustomerModal());
+        document.getElementById('tambah-pelanggan-empty').addEventListener('click', () => showCustomerModal());
+        document.getElementById('settingsForm').addEventListener('submit', saveSettings);
+        
+        // Edit Tunggakan Modal
+        document.getElementById('btn-simpan-tunggakan').addEventListener('click', saveTunggakan);
+        
+        // Payment Modal
+        document.getElementById('btn-bayar-lunas').addEventListener('click', () => handlePayment(true));
+        document.getElementById('btn-bayar-manual').addEventListener('click', () => handlePayment(false));
+
+        // Prorata Modal
+        document.getElementById('tglMulai').addEventListener('change', calculateProrata);
+        document.getElementById('tglAkhir').addEventListener('change', calculateProrata);
+        document.getElementById('hariPeriodik').addEventListener('input', calculateProrata);
+        document.getElementById('btn-buat-prorata').addEventListener('click', handleProrata);
+        
+        // WA Modal
+        document.getElementById('btn-copy-wa').addEventListener('click', copyWaMessage);
+        
+        // Tagihan & Delete Modals
+        document.getElementById('btn-konfirmasi-tagihan').addEventListener('click', generateTagihan);
+        document.getElementById('btn-konfirmasi-hapus').addEventListener('click', deleteCustomer);
+        
+        // --- Event Listener Dinamis (delegasi event) ---
+        customerList.addEventListener('click', (e) => {
+            const target = e.target.closest('button');
+            if (!target) return;
+
+            const id = target.dataset.id;
+            
+            if (target.classList.contains('btn-edit')) {
+                const customer = customersData.find(c => c.id === id);
+                showCustomerModal(customer);
+            }
+            if (target.classList.contains('btn-edit-tunggakan')) {
+                const currentTunggakan = parseFloat(target.dataset.tunggakan) || 0;
+                showEditTunggakanModal(id, currentTunggakan);
+            }
+            if (target.classList.contains('btn-delete')) {
+                showDeleteModal(id);
+            }
+            if (target.classList.contains('btn-bayar')) {
+                showPaymentModal(id);
+            }
+            if (target.classList.contains('btn-tagih')) {
+                showTagihanModal(id);
+            }
+            if (target.classList.contains('btn-prorata')) {
+                showProrataModal(id);
+            }
+            if (target.classList.contains('btn-wa')) {
+                showWaModal(id);
+            }
+        });
+
+        // --- Dark Mode Toggle ---
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+        });
+
+        // Apply saved theme on load
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark');
+        }
+    });
+		</script>
 </body>
 </html>
