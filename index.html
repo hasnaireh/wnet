@@ -433,8 +433,7 @@
 
         // =========================================================================
         // PENTING: Salin Konfigurasi Firebase Anda dan tempel di bawah ini
-        // =========================================================================
-        const firebaseConfig = {
+       const firebaseConfig = {
   apiKey: "AIzaSyAUpWUeKypU53Fdb4okuZ-oVJNuyTK19i8",
   authDomain: "wnet-c4907.firebaseapp.com",
   projectId: "wnet-c4907",
@@ -605,7 +604,7 @@
                         `}
                         <button class="btn-delete ml-3 p-2 text-gray-400 hover:text-red-600" data-id="${customer.id}" title="Hapus">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                                <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 0 0-.53 1.025l.155.433c.365.966.746 1.925 1.15 2.872A8.9 8.9 0 0 0 8 13.5a.75.75 0 0 0 1.5 0c0-1.01.12-1.98.34-2.923.404-.947.785-1.906 1.15-2.872l.155-.433a.75.75 0 0 0-.53-1.025c-.78-.122-1.57-.22-2.365-.298V3.75A2.75 2.75 0 0 0 8.75 1ZM6.082 8.75c-.351-.81-.676-1.583-.976-2.316l-.008-.02-.013-.036a.75.75 0 0 1 1.025-.53l.433.155c.78.28 1.557.534 2.306.756a.75.75 0 0 0 .588 0c.749-.222 1.526-.476 2.306-.756l.433-.155a.75.75 0 0 1 1.025.53l-.013.036-.008.02c-.3.732-.625 1.506-.976 2.316a51.64 51.64 0 0 1-.84 1.953.75.75 0 0 0 .346 1.039l.23.115a.75.75 0 0 1 0 1.29l-.23.115a.75.75 0 0 0-.346 1.039c.27.625.568 1.28.84 1.953.301.732.625 1.506.976 2.316l.008.02.013.036a.75.75 0 0 1-1.025.53l-.433-.155c-.78-.28-1.557-.534-2.306-.756a.75.75 0 0 0-.588 0c-.749.222-1.526.476-2.306-.756l-.433-.155a.75.75 0 0 1-1.025-.53l.013-.036.008-.02c.3-.732.625-1.506.976-2.316.27-.625.568-1.28.84-1.953a.75.75 0 0 0-.346-1.039l-.23-.115a.75.75 0 0 1 0-1.29l.23-.115a.75.75 0 0 0 .346-1.039c-.27-.625-.568-1.28-.84-1.953Z" clip-rule="evenodd" />
+                                <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 0 0-.53 1.025l.155.433c.365.966.746 1.925 1.15 2.872A8.9 8.9 0 0 0 8 13.5a.75.75 0 0 0 1.5 0c0-1.01.12-1.98.34-2.923.404-.947.785-1.906 1.15-2.872l.155-.433a.75.75 0 0 0-.53-1.025c-.78-.122-1.57-.22-2.365-.298V3.75A2.75 2.75 0 0 0 8.75 1ZM6.082 8.75c-.351-.81-.676-1.583-.976-2.316l-.008-.02-.013-.036a.75.75 0 0 1 1.025-.53l.433.155c.78.28 1.557.534 2.306.756a.75.75 0 0 0 .588 0c.749-.222 1.526-.476 2.306-.756l.433-.155a.75.75 0 0 1 1.025.53l-.013.036-.008.02c-.3.732-.625 1.506-.976 2.316a51.64 51.64 0 0 1-.84 1.953.75.75 0 0 0 .346 1.039l.23.115a.75.75 0 0 1 0 1.29l-.23.115a.75.75 0 0 0-.346 1.039c.27.625.568 1.28.84 1.953.301.732.625 1.506.976 2.316l.008.02.013.036a.75.75 0 0 1-1.025.53l-.433-.155c-.78-.28-1.557-.534-2.306-.756a.75.75 0 0 0-.588 0c-.749.222-1.526-.476-2.306-.756l-.433-.155a.75.75 0 0 1-1.025-.53l.013-.036.008-.02c.3-.732.625-1.506.976-2.316.27-.625.568-1.28.84-1.953a.75.75 0 0 0-.346-1.039l-.23-.115a.75.75 0 0 1 0-1.29l.23-.115a.75.75 0 0 0 .346-1.039c-.27-.625-.568-1.28-.84-1.953Z" clip-rule="evenodd" />
                             </svg>
                         </button>
                     </div>
@@ -996,80 +995,82 @@
             }
 
             const reader = new FileReader();
+
             reader.onload = async (event) => {
-                const data = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                if (json.length < 2) {
-                    showInfoModal('File Excel kosong atau tidak valid.', 'error');
-                    return;
-                }
-
-                // Ambil header dan normalisasi (ubah ke huruf kecil)
-                const headers = json[0].map(h => h.toString().toLowerCase());
-                const requiredHeaders = ['nama', 'paket', 'harga', 'no hp', 'alamat'];
-                
-                // Cari indeks kolom berdasarkan header
-                const colIndex = {};
-                requiredHeaders.forEach(rh => {
-                    colIndex[rh] = headers.indexOf(rh);
-                });
-
-                // Cek header wajib
-                if (colIndex['nama'] === -1 || colIndex['harga'] === -1) {
-                    showInfoModal('Format Excel salah. Pastikan ada kolom NAMA dan HARGA.', 'error');
-                    return;
-                }
-
-                // Hapus baris header
-                json.shift(); 
-                
-                loadingOverlay.style.display = 'flex';
-                toggleModal('importModal', false);
-
-                // Proses data menggunakan Batch Write
-                const batch = writeBatch(db);
-                let importCount = 0;
-                
-                json.forEach(row => {
-                    const nama = row[colIndex['nama']];
-                    const harga = row[colIndex['harga']];
-
-                    // Hanya proses jika NAMA dan HARGA ada
-                    if (nama && harga) {
-                        const newCustomer = {
-                            nama: nama.toString(),
-                            paket: colIndex['paket'] !== -1 ? row[colIndex['paket']].toString() : '',
-                            harga: parseFloat(harga) || 0,
-                            noHp: colIndex['no hp'] !== -1 ? row[colIndex['no hp']].toString() : '',
-                            alamat: colIndex['alamat'] !== -1 ? row[colIndex['alamat']].toString() : '',
-                            tunggakan: 0,
-                            tagihanBulanIni: 0,
-                            createdAt: new Date().toISOString()
-                        };
-                        
-                        const docRef = doc(customersCollection); // Buat referensi doc baru
-                        batch.set(docRef, newCustomer);
-                        importCount++;
-                    }
-                });
+                loadingOverlay.style.display = 'flex'; // Tampilkan loading
+                toggleModal('importModal', false); // Tutup modal
 
                 try {
+                    const data = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    if (json.length < 2) {
+                        showInfoModal('File Excel kosong atau tidak valid.', 'error');
+                        return; // finally akan dijalankan
+                    }
+
+                    // Ambil header dan normalisasi (ubah ke huruf kecil, tangani null/undefined)
+                    const headers = json[0].map(h => (h || '').toString().toLowerCase());
+                    const requiredHeaders = ['nama', 'paket', 'harga', 'no hp', 'alamat'];
+                    
+                    // Cari indeks kolom berdasarkan header
+                    const colIndex = {};
+                    requiredHeaders.forEach(rh => {
+                        colIndex[rh] = headers.indexOf(rh);
+                    });
+
+                    // Cek header wajib
+                    if (colIndex['nama'] === -1 || colIndex['harga'] === -1) {
+                        showInfoModal('Format Excel salah. Pastikan ada kolom NAMA dan HARGA.', 'error');
+                        return; // finally akan dijalankan
+                    }
+
+                    // Hapus baris header
+                    json.shift(); 
+                    
+                    const batch = writeBatch(db);
+                    let importCount = 0;
+                    
+                    json.forEach(row => {
+                        const nama = row[colIndex['nama']];
+                        const harga = row[colIndex['harga']];
+
+                        // Hanya proses jika NAMA dan HARGA ada
+                        if (nama && harga) {
+                            const newCustomer = {
+                                nama: (nama || '').toString(),
+                                paket: colIndex['paket'] !== -1 ? (row[colIndex['paket']] || '').toString() : '',
+                                harga: parseFloat(harga) || 0,
+                                noHp: colIndex['no hp'] !== -1 ? (row[colIndex['no hp']] || '').toString() : '',
+                                alamat: colIndex['alamat'] !== -1 ? (row[colIndex['alamat']] || '').toString() : '',
+                                tunggakan: 0,
+                                tagihanBulanIni: 0,
+                                createdAt: new Date().toISOString()
+                            };
+                            
+                            const docRef = doc(customersCollection); // Buat referensi doc baru
+                            batch.set(docRef, newCustomer);
+                            importCount++;
+                        }
+                    });
+
                     await batch.commit();
                     showInfoModal(`${importCount} pelanggan berhasil diimpor!`);
+
                 } catch (error) {
                     console.error("Error batch importing data:", error);
-                    showInfoModal('Gagal mengimpor data.', 'error');
+                    showInfoModal('Gagal mengimpor data. Cek format file.', 'error');
                 } finally {
-                    loadingOverlay.style.display = 'none';
+                    loadingOverlay.style.display = 'none'; // Pastikan loading ditutup
                 }
             };
             
             reader.onerror = () => {
                 showInfoModal('Gagal membaca file.', 'error');
+                loadingOverlay.style.display = 'none';
             };
 
             reader.readAsArrayBuffer(file);
