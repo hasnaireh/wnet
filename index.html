@@ -4,346 +4,223 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WAHYU Net Billing</title>
+    <!-- Memuat Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memuat library SheetJS untuk membaca file Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Font Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Library SHA-256 untuk hashing password -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.9.0/sha256.min.js"></script>
     <style>
-        /* Tema macOS Light/Clean */
+        /* Menggunakan font Inter yang modern */
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            overscroll-behavior-y: none;
-            background-color: #f8f9fa; /* Latar belakang abu-abu sangat muda */
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior-y: none; /* Mencegah 'bounce' di iOS */
         }
-        /* Scrollbar minimalis */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
-        
-        /* Modal backdrop: Efek "Frosted Glass" macOS */
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #4f46e5; /* Indigo */
+            border-radius: 10px;
+        }
+        /* Efek blur untuk modal backdrop */
         .modal-backdrop {
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
         }
+        /* Transisi untuk modal */
         .modal-content {
-            transition: all 0.25s ease-out;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        /* Garis batas status (minimalis) */
-        .status-border-lunas { border-left: 4px solid #10B981; } /* Green */
-        .status-border-tunggak { border-left: 4px solid #EF4444; } /* Red */
-        
-        /* Anti-tap highlight */
-        button, a { -webkit-tap-highlight-color: transparent; }
-        
-        /* Loading spinner (Biru) */
+        /* Garis batas status */
+        .status-border-lunas {
+            border-left: 4px solid #10B981; /* Green-500 */
+        }
+        .status-border-tunggak {
+            border-left: 4px solid #EF4444; /* Red-500 */
+        }
+        /* Mencegah highlight saat di-tap di mobile */
+        button, a {
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Loading spinner */
         .loader {
-            border-top-color: #3b82f6; /* Blue-500 */
+            border-top-color: #4f46e5;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        /* Navigasi Tab */
-        .page { display: none; }
-        .page.active { display: block; }
-        
-        /* Kartu (Tanpa shadow, pakai border) */
-        .clean-card {
-            background-color: #ffffff;
-            border: 1px solid #e5e7eb; /* Gray-200 */
-            border-radius: 12px;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* Menyembunyikan halaman/tab */
+        .page {
+            display: none;
+        }
+        /* Menampilkan halaman/tab yang aktif */
+        .page.active {
+            display: block;
         }
         
-        /* Tombol Kapsul (Pill button) */
-        .btn-pill {
-            border-radius: 9999px;
-            font-weight: 500;
-            transition: all 0.15s ease-in-out;
-            padding-left: 1.25rem;
-            padding-right: 1.25rem;
-            padding-top: 0.625rem;
-            padding-bottom: 0.625rem;
-            font-size: 0.875rem;
-            line-height: 1.25rem;
+        /* Animasi Shake untuk error login */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
-        .btn-pill-primary {
-            background-color: #3b82f6; /* Blue-500 */
-            color: white;
+        .shake {
+            animation: shake 0.5s ease-in-out;
         }
-        .btn-pill-primary:hover {
-            background-color: #2563eb; /* Blue-600 */
-        }
-        .btn-pill-secondary {
-            background-color: #e5e7eb; /* Gray-200 */
-            color: #1f2937; /* Gray-800 */
-        }
-        .btn-pill-secondary:hover {
-            background-color: #d1d5db; /* Gray-300 */
-        }
-        .btn-pill-danger {
-            background-color: #ef4444; /* Red-500 */
-            color: white;
-        }
-        .btn-pill-danger:hover {
-            background-color: #dc2626; /* Red-600 */
-        }
-        .btn-pill-green {
-            background-color: #10b981; /* Green-500 */
-            color: white;
-        }
-        .btn-pill-green:hover {
-            background-color: #059669; /* Green-600 */
-        }
-
-        /* Tombol Aksi Kartu (Biru) */
-        .btn-action-card {
-            background-color: #3b82f6;
-            color: white;
-            border-radius: 9999px;
-            padding-left: 1rem;
-            padding-right: 1rem;
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
-            font-size: 0.875rem;
-            line-height: 1.25rem;
-            font-weight: 500;
-            transition: background-color 0.15s ease;
-        }
-        .btn-action-card:hover { background-color: #2563eb; }
-        .btn-action-card-green {
-            background-color: #10b981;
-        }
-        .btn-action-card-green:hover { background-color: #059669; }
-
-        /* Tombol Ikon (Minimalis) */
-        .btn-icon-minimal {
-            color: #9ca3af; /* Gray-400 */
-            border-radius: 9999px;
-            padding: 0.375rem; /* p-1.5 */
-            transition: all 0.15s ease;
-        }
-        .btn-icon-minimal:hover {
-            color: #1f2937; /* Gray-800 */
-            background-color: #f3f4f6; /* Gray-100 */
-        }
-        
-        /* Input Form */
-        .form-input {
-            border: 1px solid #d1d5db; /* Gray-300 */
-            border-radius: 8px; /* Sudut lebih tumpul */
-            padding: 0.75rem 1rem;
-            transition: all 0.15s ease;
-        }
-        .form-input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-            outline: none;
-        }
-
-        /* Halaman Login */
-        #login-screen {
-            background: linear-gradient(135deg, #f0f2f5 0%, #ffffff 100%);
-        }
-        .login-card {
-            background-color: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Header (Cerah) */
-        .app-header {
-            background-color: #ffffff;
-            border-bottom: 1px solid #e5e7eb; /* Gray-200 */
-            position: sticky;
-            top: 0;
-            z-index: 40;
-        }
-
-        /* Navigasi Bawah (Cerah) */
-        .bottom-nav {
-            background-color: #ffffff;
-            border-top: 1px solid #e5e7eb; /* Gray-200 */
-        }
-        .btn-nav.active {
-            color: #3b82f6; /* Blue-500 */
-        }
-        .btn-nav:not(.active) {
-            color: #6b7280; /* Gray-500 */
-        }
-        .btn-nav:not(.active):hover {
-            color: #3b82f6;
-        }
-        
-        /* Filter Tabs (macOS style) */
-        .tab-filter-container {
-            display: inline-flex;
-            background-color: #e5e7eb; /* Gray-200 */
-            border-radius: 8px;
-            padding: 0.25rem;
-        }
-        .tab-filter {
-            border-radius: 6px;
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
-            line-height: 1.25rem;
-            font-weight: 500;
-            color: #4b5563; /* Gray-600 */
-            transition: all 0.2s ease;
-        }
-        .tab-filter.active {
-            background-color: #ffffff;
-            color: #1f2937; /* Gray-800 */
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-        }
-
     </style>
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden flex flex-col">
 
     <!-- ======================= -->
-    <!-- Layar Kunci Sandi       -->
+    <!-- Layar Kunci Password    -->
     <!-- ======================= -->
-    <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-        <div class="login-card w-full max-w-sm p-8">
-            <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">WAHYU Net</h2>
-            <p class="text-sm text-center text-gray-600 mb-6">Masukkan kata sandi untuk melanjutkan</p>
-            <form id="loginForm">
-                <div class="mb-4">
+    <div id="lockScreen" class="fixed inset-0 bg-gray-900 z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-8">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-16 h-16 mx-auto text-indigo-600">
+                <path fill-rule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3A5.25 5.25 0 0 0 12 1.5Zm-3.75 5.25v3h7.5v-3a3.75 3.75 0 0 0-7.5 0Z" clip-rule="evenodd" />
+            </svg>
+            <h2 class="text-2xl font-bold text-center text-gray-800 mt-4">Akses Dibatasi</h2>
+            <p class="text-center text-gray-500 text-sm mt-1">Masukkan kata sandi untuk melanjutkan.</p>
+            
+            <form id="lockForm" class="mt-6">
+                <div>
                     <label for="password" class="sr-only">Kata Sandi</label>
-                    <input type="password" id="password" class="form-input w-full text-center" placeholder="••••••••">
+                    <input type="password" id="password" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-center" placeholder="••••••••" required>
                 </div>
-                <button type="submit" class="w-full btn-pill btn-pill-primary">
+                <p id="passwordError" class="text-red-500 text-sm text-center mt-2 hidden">Kata sandi salah.</p>
+                <button type="submit" class="w-full mt-4 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                     Masuk
                 </button>
-                <p id="login-error" class="text-red-500 text-sm text-center mt-3 hidden">Kata sandi salah.</p>
             </form>
         </div>
     </div>
 
-
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 bg-white/60 modal-backdrop flex justify-center items-center z-[99]">
-        <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12"></div>
-    </div>
-
-    <!-- Header Bar -->
-    <header class="app-header p-4">
-        <div class="container mx-auto max-w-5xl flex justify-between items-center">
-            <div>
-                <h1 id="app-title-header" class="text-xl font-bold text-gray-900">WAHYU Net</h1>
-                <p id="total-tagihan-header" class="text-sm text-blue-600 font-medium">Total Tagihan: Rp 0</p>
-            </div>
-            <!-- Kebab Menu (Tiga Titik) -->
-            <button id="kebab-menu-button" class="btn-icon-minimal p-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 0 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 0 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 0 1 0-1.5.75.75 0 0 1 0 1.5Z" />
-                </svg>
-            </button>
+    <!-- ======================= -->
+    <!-- Konten Aplikasi Utama   -->
+    <!-- ======================= -->
+    <div id="appContent" class="h-full flex flex-col hidden">
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm flex justify-center items-center z-[99]">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12"></div>
         </div>
-    </header>
 
-    <!-- Kebab Menu Modal (Hidden) -->
-    <div id="kebab-menu-modal" class="hidden fixed top-16 right-4 bg-white shadow-xl rounded-xl z-50 w-64 border border-gray-200">
-        <ul class="py-2">
-            <li>
-                <button id="import-excel-btn-menu" class="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-3 text-green-600">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.165 15.356L8.25 19.5m0 0-.335.335a.75.75 0 0 1-1.06 0l-1.5-1.5a.75.75 0 0 1 0-1.06l.335-.335m0 0 1.5 1.5 1.5-1.5m0 0 .335-.335a.75.75 0 0 1 1.06 0l1.5 1.5a.75.75 0 0 1 0 1.06l-.335.335m0 0c-.22.22-.38.484-.487.75-.106.266-.163.546-.163.84 0 .4.098.784.28 1.12C8.18 21.488 8.683 22 9.25 22h5.5c.567 0 1.07-.512 1.358-.88.183-.336.28-.72.28-1.12 0-.294-.057-.574-.163-.84-.106-.266-.267-.53-.487-.75m-6 3.75h6m-5.75-15h5.75" />
+        <!-- Header Bar -->
+        <header class="bg-indigo-700 text-white p-4 shadow-md sticky top-0 z-40">
+            <div class="container mx-auto max-w-5xl flex justify-between items-center">
+                <div>
+                    <h1 id="app-title-header" class="text-xl font-bold">WAHYU Net</h1>
+                    <p id="total-tagihan-header" class="text-sm text-indigo-200">Total Tagihan: Rp 0</p>
+                </div>
+                <!-- Kebab Menu (Tiga Titik) -->
+                <button id="kebab-menu-button" class="p-2 rounded-full hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 0 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 0 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 0 1 0-1.5.75.75 0 0 1 0 1.5Z" />
                     </svg>
-                    Import Excel
                 </button>
-            </li>
-            <li>
-                <button id="buat-tagihan-semua-btn-menu" class="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-3 text-blue-600">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                    </svg>
-                    Buat Tagihan (Semua)
-                </button>
-            </li>
-            <li>
-                <button id="hapus-semua-btn-menu" class="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-3 text-red-600">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12.578 0a48.108 48.108 0 0 1 3.478-.397m12.578 0h.225a2.25 2.25 0 0 1 2.25 2.25v.225c0 .12-.01.237-.026.351m-11.753 0l-3.111 3.112a2.25 2.25 0 0 0-2.244 2.077L4.772 19.673m0-13.883H4.498a2.25 2.25 0 0 0-2.25 2.25v.225c0 .12.01.237.026.351m11.753 0c-.34.052-.68.107-1.022.166" />
-                    </svg>
-                    Hapus Semua Data
-                </button>
-            </li>
-        </ul>
-    </div>
+            </div>
+        </header>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 overflow-y-auto pb-28">
+        <!-- Kebab Menu Modal (Hidden) -->
+        <div id="kebab-menu-modal" class="hidden fixed top-16 right-4 bg-white shadow-xl rounded-lg z-50 w-64 border border-gray-200">
+            <ul class="py-2">
+                <li>
+                    <button id="import-excel-btn-menu" class="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-3 text-green-600">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.165 15.356L8.25 19.5m0 0-.335.335a.75.75 0 0 1-1.06 0l-1.5-1.5a.75.75 0 0 1 0-1.06l.335-.335m0 0 1.5 1.5 1.5-1.5m0 0 .335-.335a.75.75 0 0 1 1.06 0l1.5 1.5a.75.75 0 0 1 0 1.06l-.335.335m0 0c-.22.22-.38.484-.487.75-.106.266-.163.546-.163.84 0 .4.098.784.28 1.12C8.18 21.488 8.683 22 9.25 22h5.5c.567 0 1.07-.512 1.358-.88.183-.336.28-.72.28-1.12 0-.294-.057-.574-.163-.84-.106-.266-.267-.53-.487-.75m-6 3.75h6m-5.75-15h5.75" />
+                        </svg>
+                        Import Excel
+                    </button>
+                </li>
+                <li>
+                    <button id="buat-tagihan-semua-btn-menu" class="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-3 text-blue-600">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        Buat Tagihan (Semua)
+                    </button>
+                </li>
+                <li>
+                    <button id="hapus-semua-btn-menu" class="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-3 text-red-600">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12.578 0a48.108 48.108 0 0 1 3.478-.397m12.578 0h.225a2.25 2.25 0 0 1 2.25 2.25v.225c0 .12-.01.237-.026.351m-11.753 0l-3.111 3.112a2.25 2.25 0 0 0-2.244 2.077L4.772 19.673m0-13.883H4.498a2.25 2.25 0 0 0-2.25 2.25v.225c0 .12.01.237.026.351m11.753 0c-.34.052-.68.107-1.022.166" />
+                        </svg>
+                        Hapus Semua Data
+                    </button>
+                </li>
+            </ul>
+        </div>
 
-        <!-- ======================= -->
-        <!-- Page: Home (Analitik) -->
-        <!-- ======================= -->
-        <div id="page-home" class="page active">
-            <div class="container mx-auto max-w-5xl p-4">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Ringkasan Pembukuan</h2>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <!-- Card Total Tagihan -->
-                    <div class="clean-card p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-blue-100 rounded-full p-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-blue-600">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.768 0-1.536.219-2.121.659L9 15.182M12 6v.01" />
-                                </svg>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-500 truncate">Total Tagihan Aktif</p>
-                                <p id="analytic-total-tagihan" class="text-2xl font-bold text-gray-900">Rp 0</p>
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto pb-28">
+
+            <!-- ======================= -->
+            <!-- Page: Home (Analitik) -->
+            <!-- ======================= -->
+            <div id="page-home" class="page active">
+                <div class="container mx-auto max-w-5xl p-4">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Ringkasan Pembukuan</h2>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Card Total Tagihan -->
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 bg-indigo-500 rounded-md p-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.768 0-1.536.219-2.121.659L9 15.182M12 6v.01" />
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-500 truncate">Total Tagihan Aktif</p>
+                                    <p id="analytic-total-tagihan" class="text-2xl font-bold text-gray-900">Rp 0</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Card Total Pelanggan -->
-                    <div class="clean-card p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-blue-100 rounded-full p-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-blue-600">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                                </svg>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-500 truncate">Total Pelanggan</p>
-                                <p id="analytic-total-pelanggan" class="text-2xl font-bold text-gray-900">0</p>
+                        <!-- Card Total Pelanggan -->
+                        <div id="analytic-card-total" class="bg-white p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-500 truncate">Total Pelanggan</p>
+                                    <p id="analytic-total-pelanggan" class="text-2xl font-bold text-gray-900">0</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Card Lunas -->
-                    <div class="clean-card p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-green-100 rounded-full p-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-green-600">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                </svg>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-500 truncate">Pelanggan Lunas</p>
-                                <p id="analytic-lunas" class="text-2xl font-bold text-gray-900">0</p>
+                        <!-- Card Lunas -->
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-500 truncate">Pelanggan Lunas</p>
+                                    <p id="analytic-lunas" class="text-2xl font-bold text-gray-900">0</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Card Belum Lunas -->
-                    <div class="clean-card p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-red-100 rounded-full p-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-red-600">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-                                </svg>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-500 truncate">Pelanggan Belum Bayar</p>
-                                <p id="analytic-belum-lunas" class="text-2xl font-bold text-gray-900">0</p>
+                        <!-- Card Belum Lunas -->
+                        <div id="analytic-card-belum-lunas" class="bg-white p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 bg-red-500 rounded-md p-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-500 truncate">Pelanggan Belum Bayar</p>
+                                    <p id="analytic-belum-lunas" class="text-2xl font-bold text-gray-900">0</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -358,22 +235,35 @@
                 <div class="container mx-auto max-w-5xl p-4">
                     
                     <!-- Filter Tabs -->
-                    <div class="mb-4 text-center">
-                        <div id="filter-nav" class="tab-filter-container">
-                            <button data-filter="semua" class="tab-filter active" aria-current="page">
-                                Semua
-                            </button>
-                            <button data-filter="belum-bayar" class="tab-filter relative">
-                                Belum Bayar
-                                <span id="count-belum-bayar" class="hidden absolute -top-1 -right-1 block h-4 w-4 rounded-full bg-red-500 text-white text-xs" style="font-size: 0.6rem; line-height: 1rem;">0</span>
-                            </button>
-                            <button data-filter="ada-tunggakan" class="tab-filter relative">
-                                Ada Tunggakan
-                                <span id="count-ada-tunggakan" class="hidden absolute -top-1 -right-1 block h-4 w-4 rounded-full bg-yellow-500 text-white text-xs" style="font-size: 0.6rem; line-height: 1rem;">0</span>
-                            </button>
-                            <button data-filter="lunas" class="tab-filter">
-                                Lunas
-                            </button>
+                    <div class="mb-4">
+                        <div class="sm:border-b sm:border-gray-200">
+                            <nav id="filter-nav" class="flex -mb-px space-x-4 sm:space-x-6 overflow-x-auto" aria-label="Tabs">
+                                <button data-filter="semua" class="tab-filter flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-indigo-600 border-indigo-500" aria-current="page">
+                                    Semua
+                                </button>
+                                <button data-filter="belum-bayar" class="tab-filter flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-transparent hover:border-gray-300">
+                                    Belum Bayar
+                                    <span id="count-belum-bayar" class="ml-2 hidden bg-red-100 text-red-600 py-0.5 px-2 rounded-full text-xs font-medium">0</span>
+                                </button>
+                                <button data-filter="ada-tunggakan" class="tab-filter flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-transparent hover:border-gray-300">
+                                    Ada Tunggakan
+                                    <span id="count-ada-tunggakan" class="ml-2 hidden bg-yellow-100 text-yellow-600 py-0.5 px-2 rounded-full text-xs font-medium">0</span>
+                                </button>
+                                <button data-filter="lunas" class="tab-filter flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-transparent hover:border-gray-300">
+                                    Lunas
+                                    <span id="count-lunas" class="ml-2 hidden bg-green-100 text-green-600 py-0.5 px-2 rounded-full text-xs font-medium">0</span>
+                                </button>
+                            </nav>
+                        </div>
+                    </div>
+
+                    <!-- Search Bar -->
+                    <div class="mb-4 relative">
+                        <input type="text" id="search-bar" placeholder="Cari nama pelanggan..." class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd" />
+                            </svg>
                         </div>
                     </div>
 
@@ -389,8 +279,8 @@
                         <h3 class="mt-2 text-lg font-medium text-gray-700">Tidak ada pelanggan</h3>
                         <p class="mt-1 text-sm text-gray-500">Mulai dengan menambahkan pelanggan baru.</p>
                         <div class="mt-6">
-                            <button type="button" id="tambah-pelanggan-empty" class="btn-pill btn-pill-primary">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="-ml-1 mr-2 h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor">
+                            <button type="button" id="tambah-pelanggan-empty" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="-ml-1 mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
                                 </svg>
                                 Tambah Pelanggan
@@ -404,9 +294,9 @@
             <!-- Page: Laporan (Placeholder) -->
             <!-- ======================= -->
             <div id="page-laporan" class="page">
-                 <div class="container mx-auto max-w-5xl p-4">
+                <div class="container mx-auto max-w-5xl p-4">
                     <h2 class="text-2xl font-semibold text-gray-800 mb-4">Laporan</h2>
-                    <div class="clean-card p-6 text-center">
+                    <div class="bg-white p-6 rounded-lg shadow-md text-center">
                         <p class="text-gray-500">Fitur laporan akan segera hadir.</p>
                     </div>
                 </div>
@@ -416,21 +306,21 @@
             <!-- Page: Pengaturan -->
             <!-- ======================= -->
             <div id="page-pengaturan" class="page">
-                 <div class="container mx-auto max-w-5xl p-4">
+                <div class="container mx-auto max-w-5xl p-4">
                     <h2 class="text-2xl font-semibold text-gray-800 mb-4">Pengaturan</h2>
                     
-                    <div class="clean-card p-6">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
                         <form id="settingsForm">
                             <div class="space-y-6">
                                 <div>
                                     <label for="namaUsaha" class="block text-sm font-medium text-gray-700">Nama Usaha Anda</label>
-                                    <input type="text" id="namaUsaha" class="form-input mt-1 block w-full" placeholder="Contoh: WAHYU Net">
+                                    <input type="text" id="namaUsaha" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: WAHYU Net">
                                     <p class="mt-1 text-xs text-gray-500">Nama ini akan muncul di header aplikasi dan di template WA.</p>
                                 </div>
                                 
                                 <div>
                                     <label for="templateWa" class="block text-sm font-medium text-gray-700">Template Pesan WhatsApp</label>
-                                    <textarea id="templateWa" rows="6" class="form-input mt-1 block w-full"></textarea>
+                                    <textarea id="templateWa" rows="6" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
                                     <p class="mt-1 text-xs text-gray-500">
                                         Gunakan variabel: 
                                         <code class="bg-gray-200 px-1 py-0.5 rounded text-xs">{nama}</code>, 
@@ -440,7 +330,7 @@
                                 </div>
                             </div>
                             <div class="flex justify-end mt-6">
-                                <button type="submit" class="btn-pill btn-pill-primary">
+                                <button type="submit" class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                                     Simpan Pengaturan
                                 </button>
                             </div>
@@ -452,1063 +342,1081 @@
         </main>
 
         <!-- Floating Action Button (FAB) -->
-        <button id="fab-tambah-pelanggan" class="fixed bottom-24 right-6 bg-blue-500 text-white p-4 rounded-full shadow-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 z-40 transition-transform transform hover:scale-105">
+        <button id="fab-tambah-pelanggan" class="fixed bottom-24 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 z-40">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
                 <path fill-rule="evenodd" d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
             </svg>
         </button>
 
         <!-- Bottom Navigation Bar -->
-        <nav class="bottom-nav fixed bottom-0 left-0 right-0 z-30">
+        <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md shadow-[0_-1px_3px_rgba(0,0,0,0.1)] z-30 border-t border-gray-200">
             <div class="container mx-auto max-w-5xl flex justify-around h-16">
-                <button data-page="home" class="btn-nav active flex flex-col items-center justify-center px-4">
+                <button data-page="home" class="btn-nav flex flex-col items-center justify-center text-indigo-600 px-4">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
                         <path d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 1-1.06 1.06l-1.72-1.72V21a.75.75 0 0 1-.75.75h-5.25a.75.75 0 0 1-.75-.75V15a.75.75 0 0 0-.75-.75h-1.5a.75.75 0 0 0-.75.75v6a.75.75 0 0 1-.75.75H5.25a.75.75 0 0 1-.75-.75V11.875L2.81 13.59a.75.75 0 1 1-1.06-1.06l8.69-8.69Z" />
                         <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z" />
                     </svg>
-                    <span class="text-xs font-medium mt-0.5">Home</span>
+                    <span class="text-xs font-medium">Home</span>
                 </button>
-                <button data-page="pelanggan" class="btn-nav flex flex-col items-center justify-center px-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                <button data-page="pelanggan" class="btn-nav flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 px-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479.5.5 0 0 0 .479-.479V11.75a.5.5 0 0 0-.479-.479M18 18.72a8.966 8.966 0 0 1-2.28 1.95c-.52.34-1.1.606-1.72.83M18 18.72v-7.01c0-.52-.34-1.1-.83-1.72a8.966 8.966 0 0 0-1.95-2.28c-.34-.52-.606-1.1-.83-1.72v-7.01c0-.52-.34-1.1-.83-1.72a8.966 8.966 0 0 0-1.95-2.28c-.34-.52-.606-1.1-.83-1.72V2.72c0-.52-.34-1.1-.83-1.72a8.966 8.966 0 0 0-1.95-2.28C8.966 3.22 8.7 3.48 8.47 4c-1.72.83-3.12 2.23-3.95 3.95C4.18 8.7 4 9.18 4 9.72v7.01c0 .52.34 1.1.83 1.72a8.966 8.966 0 0 0 1.95 2.28c.34.52.606 1.1.83 1.72v7.01c0 .52.34 1.1.83 1.72a8.966 8.966 0 0 0 1.95 2.28c.34.52.606 1.1.83 1.72h7.01c.52 0 1.1-.34 1.72-.83a8.966 8.966 0 0 0 2.28-1.95c.52-.34 1.1-.606 1.72-.83" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 12H4.5m7.5 7.5V12m0-7.5V12m7.5 0V12m0 7.5V12m0-7.5V12m-7.5 0h7.5m-7.5 7.5h7.5m-7.5-15h7.5m-7.5 7.5h7.5" />
                     </svg>
-                    <span class="text-xs font-medium mt-0.5">Pelanggan</span>
+                    <span class="text-xs font-medium">Pelanggan</span>
                 </button>
-                <button data-page="laporan" class="btn-nav flex flex-col items-center justify-center px-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                <button data-page="laporan" class="btn-nav flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 px-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h15.75c.621 0 1.125.504 1.125 1.125v6.75c0 .621-.504 1.125-1.125 1.125H4.125c-.621 0-1.125-.504-1.125-1.125v-6.75Z" />
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 6.375C3 5.754 3.504 5.25 4.125 5.25h15.75c.621 0 1.125.504 1.125 1.125v6.75c0 .621-.504 1.125-1.125 1.125H4.125c-.621 0-1.125-.504-1.125-1.125v-6.75Z" />
                     </svg>
-                    <span class="text-xs font-medium mt-0.5">Laporan</span>
+                    <span class="text-xs font-medium">Laporan</span>
                 </button>
-                <button data-page="pengaturan" class="btn-nav flex flex-col items-center justify-center px-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                <button data-page="pengaturan" class="btn-nav flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 px-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12a7.5 7.5 0 0 0 15 0m-15 0a7.5 7.5 0 1 1 15 0m-15 0H3m18 0h-1.5m-15 0a7.5 7.5 0 1 1 15 0m-15 0h.008v.008H3v-.008Zm15 0h.008v.008H18v-.008Zm-7.5 0h.008v.008H10.5v-.008Zm4.5 4.5h.008v.008H15v-.008Zm-9 0h.008v.008H6v-.008Z" />
                     </svg>
-                    <span class="text-xs font-medium mt-0.5">Pengaturan</span>
+                    <span class="text-xs font-medium">Pengaturan</span>
                 </button>
             </div>
         </nav>
+    </div>
 
 
-        <!-- ============================================= -->
-        <!-- MODALS (Hidden by default)                     -->
-        <!-- ============================================= -->
+    <!-- ============================================= -->
+    <!-- MODALS (Hidden by default)                     -->
+    <!-- ============================================= -->
 
-        <!-- Modal Tambah/Edit Pelanggan -->
-        <div id="customerModal" class="fixed inset-0 bg-black/30 modal-backdrop items-center justify-center z-50 hidden">
-            <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-lg m-4 opacity-0 transform scale-95">
-                <form id="customerForm" class="p-6">
-                    <h3 class="text-xl font-semibold text-gray-900 mb-6" id="modalTitle">Tambah Pelanggan Baru</h3>
-                    <input type="hidden" id="customerId">
-                    <div class="space-y-4">
-                        <div>
-                            <label for="nama" class="block text-sm font-medium text-gray-700 mb-1">Nama</label>
-                            <input type="text" id="nama" class="form-input w-full" required>
-                        </div>
-                        <div>
-                            <label for="paket" class="block text-sm font-medium text-gray-700 mb-1">Paket</label>
-                            <select id="paket" class="form-input w-full bg-white">
-                                <option value="Paket 1">Paket 1</option>
-                                <option value="Paket 2">Paket 2</option>
-                                <option value="Paket 3">Paket 3</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="harga" class="block text-sm font-medium text-gray-700 mb-1">Harga Paket (Rp)</label>
-                            <input type="number" id="harga" class="form-input w-full" required>
-                        </div>
-                        <div>
-                            <label for="noHp" class="block text-sm font-medium text-gray-700 mb-1">No. HP</label>
-                            <input type="tel" id="noHp" class="form-input w-full" placeholder="Contoh: 628123456789">
-                        </div>
-                        <div>
-                            <label for="alamat" class="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
-                            <textarea id="alamat" rows="2" class="form-input w-full"></textarea>
-                        </div>
-                    </div>
-                    <div class="flex justify-end space-x-3 mt-8">
-                        <button type="button" class="btn-pill btn-pill-secondary btn-cancel" data-modal="customerModal">
-                            Batal
-                        </button>
-                        <button type="submit" class="btn-pill btn-pill-primary">
-                            Simpan
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Modal Pembayaran -->
-        <div id="paymentModal" class="fixed inset-0 bg-black/30 modal-backdrop items-center justify-center z-50 hidden">
-            <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
-                <div class="p-6">
-                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Pembayaran</h3>
-                    <p class="text-sm text-gray-600 mb-4">Pelanggan: <span id="paymentCustomerName" class="font-medium"></span></p>
-                    
-                    <div class="space-y-3 mb-6 p-4 bg-gray-50 rounded-lg">
-                        <div class="flex justify-between text-sm">
-                            <span class="text-gray-500">Tagihan Paket</span>
-                            <span id="paymentHarga" class="font-medium text-gray-700">Rp 0</span>
-                        </div>
-                        <div class="flex justify-between text-sm">
-                            <span class="text-gray-500">Tunggakan Bulan Lalu</span>
-                            <span id="paymentTunggakan" class="font-medium text-gray-700">Rp 0</span>
-                        </div>
-                        <hr class="border-gray-200">
-                        <div class="flex justify-between text-lg">
-                            <span class="font-semibold text-gray-800">Total Tagihan</span>
-                            <span id="paymentTotal" class="font-bold text-blue-600">Rp 0</span>
-                        </div>
-                    </div>
-
+    <!-- Modal Tambah/Edit Pelanggan -->
+    <div id="customerModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
+        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-lg m-4 opacity-0 transform scale-95">
+            <form id="customerForm" class="p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-6" id="modalTitle">Tambah Pelanggan Baru</h3>
+                <input type="hidden" id="customerId">
+                <div class="space-y-4">
                     <div>
-                        <label for="paymentAmount" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Bayar (Rp)</label>
-                        <input type="number" id="paymentAmount" class="form-input w-full" placeholder="Masukkan jumlah">
-                        <input type="hidden" id="paymentCustomerId">
-                        <input type="hidden" id="paymentTotalAmount">
+                        <label for="nama" class="block text-sm font-medium text-gray-700">Nama</label>
+                        <input type="text" id="nama" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
                     </div>
-
-                    <div class="flex flex-col space-y-3 mt-6">
-                        <button id="btn-bayar-lunas" class="btn-pill btn-pill-green w-full">
-                            Bayar LUNAS (Otomatis)
-                        </button>
-                        <button id="btn-bayar-manual" class="btn-pill btn-pill-primary w-full">
-                            Bayar (Manual Sesuai Input)
-                        </button>
+                    <div>
+                        <label for="paket" class="block text-sm font-medium text-gray-700">Paket</label>
+                        <select id="paket" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                            <option value="Paket 1">Paket 1</option>
+                            <option value="Paket 2">Paket 2</option>
+                            <option value="Paket 3">Paket 3</option>
+                        </select>
                     </div>
-                    <button type="button" class="btn-pill btn-pill-secondary w-full mt-3 btn-cancel" data-modal="paymentModal">
+                    <div>
+                        <label for="harga" class="block text-sm font-medium text-gray-700">Harga Paket (Rp)</label>
+                        <input type="number" id="harga" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label for="noHp" class="block text-sm font-medium text-gray-700">No. HP</label>
+                        <input type="tel" id="noHp" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: 628123456789">
+                    </div>
+                    <div>
+                        <label for="alamat" class="block text-sm font-medium text-gray-700">Alamat</label>
+                        <textarea id="alamat" rows="2" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-8">
+                    <button type="button" class="btn-cancel px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="customerModal">
                         Batal
+                    </button>
+                    <button type="submit" class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Pembayaran -->
+    <div id="paymentModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
+        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
+            <div class="p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Pembayaran</h3>
+                <p class="text-sm text-gray-600 mb-4">Pelanggan: <span id="paymentCustomerName" class="font-medium"></span></p>
+                
+                <div class="space-y-3 mb-6">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Tagihan Paket</span>
+                        <span id="paymentHarga" class="font-medium text-gray-700">Rp 0</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Tunggakan Bulan Lalu</span>
+                        <span id="paymentTunggakan" class="font-medium text-gray-700">Rp 0</span>
+                    </div>
+                    <hr>
+                    <div class="flex justify-between text-lg">
+                        <span class="font-semibold text-gray-800">Total Tagihan</span>
+                        <span id="paymentTotal" class="font-bold text-indigo-600">Rp 0</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="paymentAmount" class="block text-sm font-medium text-gray-700">Jumlah Bayar (Rp)</label>
+                    <input type="number" id="paymentAmount" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Masukkan jumlah">
+                    <input type="hidden" id="paymentCustomerId">
+                    <input type="hidden" id="paymentTotalAmount">
+                </div>
+
+                <div class="flex flex-col space-y-3 mt-6">
+                    <button id="btn-bayar-lunas" class="w-full px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        Bayar LUNAS (Otomatis)
+                    </button>
+                    <button id="btn-bayar-manual" class="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Bayar (Manual Sesuai Input)
+                    </button>
+                </div>
+                <button type="button" class="btn-cancel w-full mt-3 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="paymentModal">
+                    Batal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tagihan Prorata -->
+    <div id="prorataModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
+        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
+            <div class="p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Tagihan Prorata</h3>
+                <input type="hidden" id="prorataCustomerId">
+                <input type="hidden" id="prorataHarga">
+                <div class="space-y-4">
+                    <div>
+                        <label for="tglMulai" class="block text-sm font-medium text-gray-700">Tanggal Mulai Pemakaian</label>
+                        <input type="date" id="tglMulai" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="tglAkhir" class="block text-sm font-medium text-gray-700">Tanggal Akhir Pemakaian</label>
+                        <input type="date" id="tglAkhir" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="hariPeriodik" class="block text-sm font-medium text-gray-700">Jumlah Hari dalam 1 Periode (Default: 30)</label>
+                        <input type="number" id="hariPeriodik" value="30" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div id="prorataResult" class="hidden text-center p-4 bg-indigo-50 rounded-lg">
+                        <p class="text-sm text-gray-600">Jumlah Hari Pakai: <span id="prorataHari" class="font-medium">0</span> hari</p>
+                        <p class="text-lg font-semibold text-indigo-700">Total Tagihan Prorata: <span id="prorataTotal" class="font-bold">Rp 0</span></p>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" class="btn-cancel px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="prorataModal">
+                        Batal
+                    </button>
+                    <button type="button" id="btn-buat-prorata" class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Buat Tagihan Prorata
                     </button>
                 </div>
             </div>
         </div>
+    </div>
+    
+    <!-- Modal Kirim WA -->
+    <div id="waModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
+        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-lg m-4 opacity-0 transform scale-95">
+            <div class="p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Kirim Tagihan WhatsApp</h3>
+                <p class="text-sm text-gray-600 mb-2">Pesan ini akan dikirim ke <span id="waCustomerName" class="font-medium"></span> (<span id="waCustomerPhone" class="font-medium"></span>)</p>
+                <input type="hidden" id="waLink">
+                
+                <textarea id="waMessagePreview" rows="8" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
 
-        <!-- Modal Tagihan Prorata -->
-        <div id="prorataModal" class="fixed inset-0 bg-black/30 modal-backdrop items-center justify-center z-50 hidden">
-            <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
-                <div class="p-6">
-                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Tagihan Prorata</h3>
-                    <input type="hidden" id="prorataCustomerId">
-                    <input type="hidden" id="prorataHarga">
-                    <div class="space-y-4">
-                        <div>
-                            <label for="tglMulai" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Mulai Pemakaian</label>
-                            <input type="date" id="tglMulai" class="form-input w-full">
-                        </div>
-                        <div>
-                            <label for="tglAkhir" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Akhir Pemakaian</label>
-                            <input type="date" id="tglAkhir" class="form-input w-full">
-                        </div>
-                        <div>
-                            <label for="hariPeriodik" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Hari dalam 1 Periode (Default: 30)</label>
-                            <input type="number" id="hariPeriodik" value="30" class="form-input w-full">
-                        </div>
-                        <div id="prorataResult" class="hidden text-center p-4 bg-blue-50 rounded-lg">
-                            <p class="text-sm text-gray-600">Jumlah Hari Pakai: <span id="prorataHari" class="font-medium">0</span> hari</p>
-                            <p class="text-lg font-semibold text-blue-700">Total Tagihan Prorata: <span id="prorataTotal" class="font-bold">Rp 0</span></p>
-                        </div>
-                    </div>
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" class="btn-pill btn-pill-secondary btn-cancel" data-modal="prorataModal">
-                            Batal
-                        </button>
-                        <button type="button" id="btn-buat-prorata" class="btn-pill btn-pill-primary">
-                            Buat Tagihan Prorata
-                        </button>
-                    </div>
+                <div class="flex flex-col sm:flex-row sm:space-x-3 mt-6">
+                    <button type="button" id="btn-copy-wa" class="w-full sm:w-1/2 mb-2 sm:mb-0 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        Copy Pesan
+                    </button>
+                    <a id="btn-kirim-wa" href="#" target="_blank" class="w-full sm:w-1/2 text-center px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        Kirim via WhatsApp
+                    </a>
                 </div>
+                <button type="button" class="btn-cancel w-full mt-3 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="waModal">
+                    Batal
+                </button>
             </div>
         </div>
-        
-        <!-- Modal Kirim WA -->
-        <div id="waModal" class="fixed inset-0 bg-black/30 modal-backdrop items-center justify-center z-50 hidden">
-            <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-lg m-4 opacity-0 transform scale-95">
-                <div class="p-6">
-                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Kirim Tagihan WhatsApp</h3>
-                    <p class="text-sm text-gray-600 mb-2">Pesan ini akan dikirim ke <span id="waCustomerName" class="font-medium"></span> (<span id="waCustomerPhone" class="font-medium"></span>)</p>
-                    <input type="hidden" id="waLink">
-                    
-                    <textarea id="waMessagePreview" rows="8" class="form-input w-full bg-gray-50"></textarea>
+    </div>
 
-                    <div class="flex flex-col sm:flex-row sm:space-x-3 mt-6">
-                        <button type="button" id="btn-copy-wa" class="btn-pill btn-pill-primary w-full sm:w-1/2 mb-2 sm:mb-0">
-                            Copy Pesan
-                        </button>
-                        <a id="btn-kirim-wa" href="#" target="_blank" class="btn-pill btn-pill-green w-full sm:w-1/2 text-center">
-                            Kirim via WhatsApp
-                        </a>
-                    </div>
-                    <button type="button" class="btn-pill btn-pill-secondary w-full mt-3 btn-cancel" data-modal="waModal">
+    <!-- Modal Import Excel -->
+    <div id="importModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
+        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
+            <div class="p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Import Data Excel</h3>
+                <p class="text-sm text-gray-600 mb-4">Pastikan file Excel Anda memiliki header (baris pertama) dengan nama kolom: <code class="bg-gray-200 px-1 py-0.5 rounded text-sm">NAMA</code>, <code class="bg-gray-200 px-1 py-0.5 rounded text-sm">PAKET</code>, <code class="bg-gray-200 px-1 py-0.5 rounded text-sm">HARGA</code>, <code class="bg-gray-200 px-1 py-0.5 rounded text-sm">NO HP</code>, <code class="bg-gray-200 px-1 py-0.5 rounded text-sm">ALAMAT</code>.</p>
+                <input type="file" id="excelFile" accept=".xlsx, .xls" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" class="btn-cancel px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="importModal">
                         Batal
+                    </button>
+                    <button type="button" id="btn-import-excel" class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        Import
                     </button>
                 </div>
             </div>
         </div>
-
-        <!-- Modal Import Excel -->
-        <div id="importModal" class="fixed inset-0 bg-black/30 modal-backdrop items-center justify-center z-50 hidden">
-            <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
-                <div class="p-6">
-                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Import Data Excel</h3>
-                    <p class="text-sm text-gray-600 mb-4">Pastikan file Excel Anda memiliki header (baris pertama) dengan nama kolom: <code class="bg-gray-200 px-1 py-0.5 rounded text-sm">NAMA</code>, <code class="bg-gray-200 px-1 py-0.5 rounded text-sm">PAKET</code>, <code class="bg-gray-200 px-1 py-0.5 rounded text-sm">HARGA</code>, <code class="bg-gray-200 px-1 py-0.5 rounded text-sm">NO HP</code>, <code class="bg-gray-200 px-1 py-0.5 rounded text-sm">ALAMAT</code>.</p>
-                    <input type="file" id="excelFile" accept=".xlsx, .xls" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" class="btn-pill btn-pill-secondary btn-cancel" data-modal="importModal">
-                            Batal
-                        </button>
-                        <button type="button" id="btn-import-excel" class="btn-pill btn-pill-green">
-                            Import
-                        </button>
-                    </div>
+    </div>
+    
+    <!-- Modal Buat Tagihan (1 Pelanggan) -->
+    <div id="tagihanModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
+        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
+            <div class="p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Buat Tagihan Manual</h3>
+                <p class="text-sm text-gray-600 mb-6">Ini akan menambahkan tagihan bulan ini (sesuai harga paket) ke total tagihan pelanggan. Anda yakin?</p>
+                <input type="hidden" id="tagihanCustomerId">
+                <div class="flex justify-end space-x-3">
+                    <button type="button" class="btn-cancel px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="tagihanModal">
+                        Batal
+                    </button>
+                    <button type="button" id="btn-konfirmasi-tagihan" class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        Ya, Buat Tagihan
+                    </button>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Modal Hapus Pelanggan -->
+    <div id="deleteModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
+        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-xl font-semibold text-gray-900">Hapus Pelanggan</h3>
+                        <p class="text-sm text-gray-600 mt-1">Anda yakin ingin menghapus pelanggan ini? Data tidak dapat dikembalikan.</p>
+                    </div>
+                </div>
+                <input type="hidden" id="deleteCustomerId">
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" class="btn-cancel px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="deleteModal">
+                        Batal
+                    </button>
+                    <button type="button" id="btn-konfirmasi-hapus" class="px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                        Ya, Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Hapus SEMUA Data -->
+    <div id="deleteSemuaModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
+        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-xl font-semibold text-gray-900">HAPUS SEMUA DATA</h3>
+                        <p class="text-sm text-gray-600 mt-1">Anda yakin ingin menghapus **SEMUA** data pelanggan? Aksi ini tidak dapat dibatalkan.</p>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" class="btn-cancel px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="deleteSemuaModal">
+                        Batal
+                    </button>
+                    <button type="button" id="btn-konfirmasi-hapus-semua" class="px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                        Ya, Hapus Semua
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Info Modal (Notifikasi) -->
+    <div id="infoModal" class="fixed top-5 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-[99] hidden opacity-0 transition-all duration-300">
+        <span id="infoMessage"></span>
+    </div>
+
+
+    <!-- ============================================= -->
+    <!-- Firebase SDK dan JavaScript Aplikasi         -->
+    <!-- ============================================= -->
+    <script type="module">
+        // Import fungsi Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, 
+            deleteDoc, onSnapshot, collection, query, getDocs, writeBatch 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // =========================================================================
+        // Konfigurasi Firebase Anda (Dari file yang Anda unggah)
+        // =========================================================================
+       const firebaseConfig = {
+          apiKey: "AIzaSyAUpWUeKypU53Fdb4okuZ-oVJNuyTK19i8",
+          authDomain: "wnet-c4907.firebaseapp.com",
+          projectId: "wnet-c4907",
+          storageBucket: "wnet-c4907.appspot.com",
+          messagingSenderId: "427788084827",
+          appId: "1:427788084827:web:7978895d654fded498c17e"
+        };
+        // =========================================================================
+
+        // --- Variabel Global Aplikasi ---
+        let db;
+        let auth;
+        let customersCollection;
+        let settingsCollection;
+        let settingsDocRef;
+        let unsubscribeSnap; // Untuk listener onSnapshot
+        let unsubscribeSettingsSnap; // Listener untuk settings
+        let currentFilter = "semua";
+        let customersData = []; // Cache data lokal
+        let appSettings = {
+            namaUsaha: "WAHYU Net",
+            templateWa: "Halo {nama}, kami dari {nama_usaha} ingin memberitahukan total tagihan Anda bulan ini adalah {total_tagihan}. Terima kasih."
+        };
+
+        // --- Variabel Kunci Sandi ---
+        const PASSWORD_HASH_KEY = 'wahyu-net-password-hash';
+        const correctPassword = "net.wahyu"; // <-- KATA SANDI ANDA
+
+        // --- DOM Elements Aplikasi ---
+        const customerList = document.getElementById('customer-list');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const emptyState = document.getElementById('empty-state');
+        const totalTagihanHeader = document.getElementById('total-tagihan-header');
+        const appTitleHeader = document.getElementById('app-title-header');
         
-        <!-- Modal Buat Tagihan (1 Pelanggan) -->
-        <div id="tagihanModal" class="fixed inset-0 bg-black/30 modal-backdrop items-center justify-center z-50 hidden">
-            <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
-                <div class="p-6">
-                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Buat Tagihan Manual</h3>
-                    <p class="text-sm text-gray-600 mb-6">Ini akan menambahkan tagihan bulan ini (sesuai harga paket) ke total tagihan pelanggan. Anda yakin?</p>
-                    <input type="hidden" id="tagihanCustomerId">
-                    <div class="flex justify-end space-x-3">
-                        <button type="button" class="btn-pill btn-pill-secondary btn-cancel" data-modal="tagihanModal">
-                            Batal
-                        </button>
-                        <button type="button" id="btn-konfirmasi-tagihan" class="btn-pill btn-pill-primary">
-                            Ya, Buat Tagihan
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        // --- DOM Elements Kunci Sandi ---
+        const lockScreen = document.getElementById('lockScreen');
+        const appContent = document.getElementById('appContent');
+        const lockForm = document.getElementById('lockForm');
+        const passwordInput = document.getElementById('password');
+        const passwordError = document.getElementById('passwordError');
 
-        <!-- Modal Hapus Pelanggan -->
-        <div id="deleteModal" class="fixed inset-0 bg-black/30 modal-backdrop items-center justify-center z-50 hidden">
-            <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
-                <div class="p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                            <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <h3 class="text-xl font-semibold text-gray-900">Hapus Pelanggan</h3>
-                            <p class="text-sm text-gray-600 mt-1">Anda yakin ingin menghapus pelanggan ini? Data tidak dapat dikembalikan.</p>
-                        </div>
-                    </div>
-                    <input type="hidden" id="deleteCustomerId">
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" class="btn-pill btn-pill-secondary btn-cancel" data-modal="deleteModal">
-                            Batal
-                        </button>
-                        <button type="button" id="btn-konfirmasi-hapus" class="btn-pill btn-pill-danger">
-                            Ya, Hapus
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        // --- Fungsi Kunci Sandi ---
 
-        <!-- Modal Hapus SEMUA Data -->
-        <div id="deleteSemuaModal" class="fixed inset-0 bg-black/30 modal-backdrop items-center justify-center z-50 hidden">
-            <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
-                <div class="p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                            <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <h3 class="text-xl font-semibold text-gray-900">HAPUS SEMUA DATA</h3>
-                            <p class="text-sm text-gray-600 mt-1">Anda yakin ingin menghapus **SEMUA** data pelanggan? Aksi ini tidak dapat dibatalkan.</p>
-                        </div>
-                    </div>
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" class="btn-pill btn-pill-secondary btn-cancel" data-modal="deleteSemuaModal">
-                            Batal
-                        </button>
-                        <button type="button" id="btn-konfirmasi-hapus-semua" class="btn-pill btn-pill-danger">
-                            Ya, Hapus Semua
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Info Modal (Notifikasi) -->
-        <div id="infoModal" class="fixed top-5 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-full shadow-lg z-[99] hidden opacity-0 transition-all duration-300">
-            <span id="infoMessage"></span>
-        </div>
-
-
-        <!-- ============================================= -->
-        <!-- Firebase SDK dan JavaScript Aplikasi         -->
-        <!-- ============================================= -->
-        <script type="module">
-            // Import fungsi Firebase
-            import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-            import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-            import { 
-                getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, 
-                deleteDoc, onSnapshot, collection, query, getDocs, writeBatch 
-            } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-            
-            // Fungsi hash sederhana (bukan kriptografi kuat, tapi cukup untuk ini)
-            async function simpleHash(str) {
-                const buffer = new TextEncoder().encode(str);
-                const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        // Fungsi untuk mengecek reset password dari URL
+        function checkURLReset() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const reset = urlParams.get('reset');
+            if (reset === 'true') {
+                localStorage.removeItem(PASSWORD_HASH_KEY);
+                console.log("Password hash reset.");
+                showInfoModal("Password telah direset. Silakan login kembali.", "info");
+                // Hapus query param agar tidak reset terus-menerus saat refresh
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
+        }
+
+        // Inisialisasi layar kunci
+        function initializeLockScreen() {
+            const storedHash = localStorage.getItem(PASSWORD_HASH_KEY);
+            if (!storedHash) {
+                // Jika belum ada hash, ini adalah login pertama kali
+                console.log("Belum ada hash. Menunggu login pertama.");
+            }
+            // Layar kunci akan tetap tampil sampai login berhasil
+        }
+        
+        // Handle submit form login
+        async function handleLogin(event) {
+            event.preventDefault();
+            const password = passwordInput.value;
+            const storedHash = localStorage.getItem(PASSWORD_HASH_KEY);
+            const correctHash = sha256(correctPassword);
+
+            if (!storedHash) {
+                // Login pertama kali
+                if (password === correctPassword) {
+                    // Simpan hash yang benar
+                    localStorage.setItem(PASSWORD_HASH_KEY, correctHash);
+                    unlockApp();
+                } else {
+                    triggerLoginError();
+                }
+            } else {
+                // Login berikutnya
+                const inputHash = sha256(password);
+                if (inputHash === correctHash) {
+                    // Jika hash input = hash yang benar (bukan hash tersimpan)
+                    // Ini untuk mengoreksi jika hash tersimpan salah (legacy fix)
+                    if (storedHash !== correctHash) {
+                         localStorage.setItem(PASSWORD_HASH_KEY, correctHash);
+                    }
+                    unlockApp();
+                } else {
+                    triggerLoginError();
+                }
+            }
+        }
+
+        // Tampilkan error login
+        function triggerLoginError() {
+            passwordError.classList.remove('hidden');
+            const lockFormContainer = lockForm.parentElement;
+            lockFormContainer.classList.add('shake');
+            passwordInput.focus();
+            setTimeout(() => {
+                lockFormContainer.classList.remove('shake');
+            }, 500);
+        }
+
+        // Buka kunci aplikasi
+        function unlockApp() {
+            lockScreen.classList.add('hidden');
+            appContent.classList.remove('hidden');
+            // Mulai inisialisasi Firebase SETELAH login berhasil
+            initializeAppService();
+        }
+
+        // --- Fungsi Utama Aplikasi (dari file app wnet.txt) ---
+
+        // Fungsi inisialisasi aplikasi
+        async function initializeAppService() {
+            try {
+                // Cek jika config masih placeholder
+                if (firebaseConfig.apiKey.startsWith("MASUKKAN_")) {
+                    console.error("Konfigurasi Firebase tidak ditemukan! Harap edit file index.html.");
+                    showInfoModal("Error: Konfigurasi Firebase tidak ditemukan.", "error");
+                    loadingOverlay.style.display = 'none';
+                    return;
+                }
+                
+                // Inisialisasi Firebase
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Login secara anonim
+                await signInAnonymously(auth);
+                
+                const userId = auth.currentUser.uid;
+                if (!userId) {
+                    throw new Error("Gagal mendapatkan User ID setelah login anonim.");
+                }
+
+                // Menggunakan koleksi 'pelanggan' yang sederhana
+                customersCollection = collection(db, "pelanggan");
+                // Koleksi untuk pengaturan
+                settingsCollection = collection(db, "settings");
+                settingsDocRef = doc(settingsCollection, "appConfig");
+
+                // Mulai mendengarkan perubahan data
+                setupSnapshotListener();
+                setupSettingsListener(); // Dengarkan perubahan settings
+
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                showInfoModal("Error terhubung ke database.", "error");
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        // Setup listener real-time (onSnapshot) untuk PELANGGAN
+        function setupSnapshotListener() {
+            if (unsubscribeSnap) {
+                unsubscribeSnap(); // Hentikan listener lama jika ada
+            }
+
+            unsubscribeSnap = onSnapshot(customersCollection, (snapshot) => {
+                customersData = [];
+                snapshot.forEach((doc) => {
+                    customersData.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Urutkan data berdasarkan nama
+                customersData.sort((a, b) => a.nama.localeCompare(b.nama));
+                
+                renderCustomers(currentFilter); // Render dengan filter dan search
+                calculateTotalBill();
+                updateFilterCounts();
+                updateAnalytics(); // Update data di Home
+                loadingOverlay.style.display = 'none';
+                
+            }, (error) => {
+                console.error("Error listening to snapshot:", error);
+                showInfoModal("Error mengambil data real-time.", "error");
+                loadingOverlay.style.display = 'none';
+            });
+        }
+        
+        // Setup listener real-time (onSnapshot) untuk PENGATURAN
+        function setupSettingsListener() {
+            if (unsubscribeSettingsSnap) {
+                unsubscribeSettingsSnap();
+            }
+
+            unsubscribeSettingsSnap = onSnapshot(settingsDocRef, (doc) => {
+                if (doc.exists()) {
+                    appSettings = { ...appSettings, ...doc.data() };
+                } else {
+                    // Jika belum ada settings, buat default
+                    setDoc(settingsDocRef, appSettings).catch(e => console.error("Could not create default settings", e));
+                }
+                updateUIForSettings();
+            }, (error) => {
+                console.error("Error listening to settings:", error);
+            });
+        }
+        
+        // Update UI berdasarkan settings
+        function updateUIForSettings() {
+            appTitleHeader.textContent = appSettings.namaUsaha || "Billing App";
+            document.getElementById('namaUsaha').value = appSettings.namaUsaha;
+            document.getElementById('templateWa').value = appSettings.templateWa;
+        }
+
+        // Fungsi untuk merender daftar pelanggan (dengan logika search)
+        function renderCustomers(filter) {
+            customerList.innerHTML = '';
             
-            // Kata sandi (JANGAN UBAH INI KECUALI ANDA TAHU APA YANG ANDA LAKUKAN)
-            const SUPER_SECRET_PASSWORD = `net.wahyu`; // Kata sandi Anda
-            const HASHED_PASSWORD_KEY = 'app_password_hash_v1';
+            // 1. Filter by tab
+            let filteredCustomers;
+            if (filter === "lunas") {
+                filteredCustomers = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0);
+            } else if (filter === "belum-bayar") {
+                filteredCustomers = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) > 0);
+            } else if (filter === "ada-tunggakan") {
+                filteredCustomers = customersData.filter(c => (c.tunggakan || 0) > 0);
+            } else { // 'semua'
+                filteredCustomers = customersData;
+            }
 
-            // =========================================================================
-            // PENTING: Salin Konfigurasi Firebase Anda dan tempel di bawah ini
-            // =========================================================================
-           const firebaseConfig = {
-  apiKey: "AIzaSyAUpWUeKypU53Fdb4okuZ-oVJNuyTK19i8",
-  authDomain: "wnet-c4907.firebaseapp.com",
-  projectId: "wnet-c4907",
-  storageBucket: "wnet-c4907.firebasestorage.app",
-  messagingSenderId: "427788084827",
-  appId: "1:427788084827:web:7978895d654fded498c17e"
-};
-            // =========================================================================
+            // 2. Filter by search term
+            const searchTerm = document.getElementById('search-bar').value.toLowerCase();
+            if (searchTerm) {
+                filteredCustomers = filteredCustomers.filter(c => 
+                    c.nama.toLowerCase().includes(searchTerm)
+                );
+            }
 
-            // Global variables
-            let db;
-            let auth;
-            let customersCollection;
-            let settingsCollection;
-            let settingsDocRef;
-            let unsubscribeSnap; // Untuk listener onSnapshot
-            let unsubscribeSettingsSnap; // Listener untuk settings
-            let currentFilter = "semua";
-            let customersData = []; // Cache data lokal
-            let appSettings = {
-                namaUsaha: "WAHYU Net",
-                templateWa: "Halo {nama}, kami dari {nama_usaha} ingin memberitahukan total tagihan Anda bulan ini adalah {total_tagihan}. Terima kasih."
+            if (filteredCustomers.length === 0) {
+                emptyState.classList.remove('hidden');
+                customerList.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                customerList.classList.remove('hidden');
+            }
+
+            filteredCustomers.forEach(customer => {
+                const totalTagihan = (customer.tunggakan || 0) + (customer.tagihanBulanIni || 0);
+                const isLunas = totalTagihan === 0;
+
+                const card = document.createElement('div');
+                card.className = `bg-white shadow-md rounded-lg p-5 flex flex-col justify-between ${isLunas ? 'status-border-lunas' : 'status-border-tunggak'}`;
+                
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-lg font-semibold text-gray-800">${customer.nama}</h3>
+                            <div class="flex space-x-1">
+                                <button class="btn-edit p-1 text-gray-400 hover:text-indigo-600" data-id="${customer.id}" title="Edit Pelanggan">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                                        <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                                        <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.18l3.75-3.75a1.651 1.651 0 0 1 2.333 0L8.41 7.39a1.651 1.651 0 0 1 0 2.333l-2.021 2.021a1.651 1.651 0 0 1-2.333 0l-3.39-3.39Zm12.021 0a1.651 1.651 0 0 1 0-1.18l3.75-3.75a1.651 1.651 0 0 1 2.333 0L21.09 7.39a1.651 1.651 0 0 1 0 2.333l-2.021 2.021a1.651 1.651 0 0 1-2.333 0l-3.39-3.39Z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                ${!isLunas ? `
+                                <button class="btn-tagih p-1 text-gray-400 hover:text-blue-600" data-id="${customer.id}" title="Buat Tagihan Manual">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                                      <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                ` : ''}
+                                <button class="btn-delete p-1 text-gray-400 hover:text-red-600" data-id="${customer.id}" title="Hapus">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                                        <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 0 0-.53 1.025l.155.433c.365.966.746 1.925 1.15 2.872A8.9 8.9 0 0 0 8 13.5a.75.75 0 0 0 1.5 0c0-1.01.12-1.98.34-2.923.404-.947.785-1.906 1.15-2.872l.155-.433a.75.75 0 0 0-.53-1.025c-.78-.122-1.57-.22-2.365-.298V3.75A2.75 2.75 0 0 0 8.75 1ZM6.082 8.75c-.351-.81-.676-1.583-.976-2.316l-.008-.02-.013-.036a.75.75 0 0 1 1.025-.53l.433.155c.78.28 1.557.534 2.306.756a.75.75 0 0 0 .588 0c.749-.222 1.526-.476 2.306-.756l.433-.155a.75.75 0 0 1 1.025.53l-.013.036-.008.02c-.3.732-.625 1.506-.976 2.316a51.64 51.64 0 0 1-.84 1.953.75.75 0 0 0 .346 1.039l.23.115a.75.75 0 0 1 0 1.29l-.23.115a.75.75 0 0 0-.346 1.039c.27.625.568 1.28.84 1.953.301.732.625 1.506.976 2.316l.008.02.013.036a.75.75 0 0 1-1.025.53l-.433-.155c-.78-.28-1.557-.534-2.306-.756a.75.75 0 0 0-.588 0c-.749-.222-1.526-.476-2.306-.756l-.433-.155a.75.75 0 0 1-1.025-.53l.013-.036.008-.02c.3-.732.625 1.506.976 2.316.27-.625.568-1.28.84-1.953a.75.75 0 0 0-.346-1.039l-.23-.115a.75.75 0 0 1 0-1.29l.23-.115a.75.75 0 0 0 .346-1.039c-.27-.625-.568-1.28-.84-1.953Z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-500">${customer.paket} (${customer.noHp || 'No HP'})</p>
+                        <p class="text-sm text-gray-500 truncate">${customer.alamat || 'Tidak ada alamat'}</p>
+                        
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs text-gray-500">Harga Paket</span>
+                                <span class="text-sm font-medium text-gray-700">${formatRupiah(customer.harga || 0)}</span>
+                            </div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs text-gray-500">Tunggakan</span>
+                                <span class="text-sm font-medium text-gray-700">${formatRupiah(customer.tunggakan || 0)}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-semibold text-gray-800">Total Tagihan</span>
+                                <span class="text-lg font-bold ${isLunas ? 'text-green-600' : 'text-red-600'}">${formatRupiah(totalTagihan)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 flex ${isLunas ? 'justify-end' : 'flex-col sm:flex-row'} items-center ${isLunas ? '' : 'space-y-2 sm:space-y-0 sm:space-x-2'}">
+                        ${isLunas ? `
+                            <span class="text-sm font-semibold text-green-600 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 mr-1">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
+                                </svg>
+                                LUNAS
+                            </span>
+                        ` : `
+                            <button class="btn-bayar w-full px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" data-id="${customer.id}">
+                                Bayar
+                            </button>
+                            <button class="btn-wa w-full px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500" data-id="${customer.id}">
+                                Kirim WA
+                            </button>
+                            <button class="btn-prorata w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500" data-id="${customer.id}">
+                                Prorata
+                            </button>
+                        `}
+                    </div>
+                `;
+                
+                customerList.appendChild(card);
+            });
+        }
+
+        // Fungsi utilitas format Rupiah
+        function formatRupiah(angka) {
+            if (angka === null || angka === undefined) angka = 0;
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(angka);
+        }
+
+        // Hitung total tagihan header
+        function calculateTotalBill() {
+            const total = customersData.reduce((acc, c) => acc + (c.tunggakan || 0) + (c.tagihanBulanIni || 0), 0);
+            totalTagihanHeader.textContent = `Total Tagihan: ${formatRupiah(total)}`;
+        }
+        
+        // Update data analitik di Halaman Home
+        function updateAnalytics() {
+            const totalPelanggan = customersData.length;
+            const totalTagihanAktif = customersData.reduce((acc, c) => acc + (c.tunggakan || 0) + (c.tagihanBulanIni || 0), 0);
+            const lunasCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0).length;
+            const belumLunasCount = totalPelanggan - lunasCount;
+            
+            document.getElementById('analytic-total-tagihan').textContent = formatRupiah(totalTagihanAktif);
+            document.getElementById('analytic-total-pelanggan').textContent = totalPelanggan;
+            document.getElementById('analytic-lunas').textContent = lunasCount;
+            document.getElementById('analytic-belum-lunas').textContent = belumLunasCount;
+        }
+
+        // Update jumlah count di filter tabs
+        function updateFilterCounts() {
+            const lunasCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0).length;
+            const belumBayarCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) > 0).length;
+            const adaTunggakanCount = customersData.filter(c => (c.tunggakan || 0) > 0).length;
+
+            const countLunas = document.getElementById('count-lunas');
+            const countBelumBayar = document.getElementById('count-belum-bayar');
+            const countAdaTunggakan = document.getElementById('count-ada-tunggakan');
+
+            countLunas.textContent = lunasCount;
+            countBelumBayar.textContent = belumBayarCount;
+            countAdaTunggakan.textContent = adaTunggakanCount;
+
+            countLunas.classList.toggle('hidden', lunasCount === 0);
+            countBelumBayar.classList.toggle('hidden', belumBayarCount === 0);
+            countAdaTunggakan.classList.toggle('hidden', adaTunggakanCount === 0);
+        }
+
+        // Fungsi toggle modal
+        function toggleModal(modalId, show = true) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            
+            const content = modal.querySelector('.modal-content');
+
+            if (show) {
+                modal.classList.replace('hidden', 'flex');
+                setTimeout(() => {
+                    if (content) {
+                        content.classList.remove('opacity-0', 'scale-95');
+                        content.classList.add('opacity-100', 'scale-100');
+                    }
+                }, 10);
+            } else {
+                if (content) {
+                    content.classList.remove('opacity-100', 'scale-100');
+                    content.classList.add('opacity-0', 'scale-95');
+                }
+                setTimeout(() => {
+                    modal.classList.replace('flex', 'hidden');
+                }, 300); // Sesuaikan dengan durasi transisi
+            }
+        }
+        
+        // Tampilkan notifikasi
+        function showInfoModal(message, type = "success") {
+            const infoModal = document.getElementById('infoModal');
+            const infoMessage = document.getElementById('infoMessage');
+
+            infoMessage.textContent = message;
+            
+            // Hapus kelas warna sebelumnya
+            infoModal.classList.remove('bg-green-600', 'bg-red-600', 'bg-blue-600');
+
+            if (type === 'error') {
+                infoModal.classList.add('bg-red-600');
+            } else if (type === 'info') {
+                infoModal.classList.add('bg-blue-600');
+            } else {
+                infoModal.classList.add('bg-green-600');
+            }
+
+            infoModal.classList.remove('hidden');
+            setTimeout(() => {
+                infoModal.classList.remove('opacity-0');
+            }, 10);
+            
+            setTimeout(() => {
+                infoModal.classList.add('opacity-0');
+                setTimeout(() => {
+                    infoModal.classList.add('hidden');
+                }, 300);
+            }, 3000);
+        }
+
+        // Tampilkan modal tambah pelanggan
+        function showCustomerModal(customer = null) {
+            const form = document.getElementById('customerForm');
+            form.reset();
+            document.getElementById('customerId').value = '';
+            
+            if (customer) {
+                // Mode Edit
+                document.getElementById('modalTitle').textContent = 'Edit Pelanggan';
+                document.getElementById('customerId').value = customer.id;
+                document.getElementById('nama').value = customer.nama;
+                document.getElementById('paket').value = customer.paket;
+                document.getElementById('harga').value = customer.harga;
+                document.getElementById('noHp').value = customer.noHp;
+                document.getElementById('alamat').value = customer.alamat;
+            } else {
+                // Mode Tambah
+                document.getElementById('modalTitle').textContent = 'Tambah Pelanggan Baru';
+            }
+            toggleModal('customerModal', true);
+        }
+
+        // Simpan data pelanggan (Tambah/Edit)
+        async function saveCustomer(event) {
+            event.preventDefault();
+            const customerId = document.getElementById('customerId').value;
+            const harga = parseFloat(document.getElementById('harga').value) || 0;
+            const customerData = {
+                nama: document.getElementById('nama').value,
+                paket: document.getElementById('paket').value,
+                harga: harga,
+                noHp: document.getElementById('noHp').value,
+                alamat: document.getElementById('alamat').value,
             };
 
-            // DOM Elements
-            const customerList = document.getElementById('customer-list');
-            const loadingOverlay = document.getElementById('loading-overlay');
-            const emptyState = document.getElementById('empty-state');
-            const totalTagihanHeader = document.getElementById('total-tagihan-header');
-            const appTitleHeader = document.getElementById('app-title-header');
-            const loginScreen = document.getElementById('login-screen');
-            const loginForm = document.getElementById('loginForm');
-            const loginError = document.getElementById('login-error');
-
-            // Fungsi inisialisasi aplikasi
-            async function initializeAppService() {
-                try {
-                    // Cek jika config masih placeholder
-                    if (firebaseConfig.apiKey.startsWith("MASUKKAN_")) {
-                        console.error("Konfigurasi Firebase tidak ditemukan! Harap edit file index.html.");
-                        showInfoModal("Error: Konfigurasi Firebase tidak ditemukan.", "error");
-                        loadingOverlay.style.display = 'none';
-                        // Tampilkan layar login, tapi mungkin gagal
-                        return;
-                    }
+            try {
+                if (customerId) {
+                    // Update
+                    const customerRef = doc(customersCollection, customerId);
+                    // Dapatkan data lama untuk menjaga tunggakan
+                    const customerSnap = await getDoc(customerRef);
+                    const existingData = customerSnap.data();
                     
-                    // Inisialisasi Firebase
-                    const app = initializeApp(firebaseConfig);
-                    db = getFirestore(app);
-                    auth = getAuth(app);
-                    
-                    // Login secara anonim
-                    await signInAnonymously(auth);
-                    
-                    const userId = auth.currentUser.uid;
-                    if (!userId) {
-                        throw new Error("Gagal mendapatkan User ID setelah login anonim.");
-                    }
-
-                    // Menggunakan koleksi 'pelanggan' yang sederhana
-                    customersCollection = collection(db, "pelanggan");
-                    // Koleksi untuk pengaturan
-                    settingsCollection = collection(db, "settings");
-                    settingsDocRef = doc(settingsCollection, "appConfig");
-
-                    // Mulai mendengarkan perubahan data
-                    setupSnapshotListener();
-                    setupSettingsListener(); // Dengarkan perubahan settings
-
-                } catch (error) {
-                    console.error("Error initializing Firebase:", error);
-                    showInfoModal("Error terhubung ke database.", "error");
-                    loadingOverlay.style.display = 'none';
-                }
-            }
-            
-            // --- Fungsi Otentikasi/Kunci Sandi ---
-            
-            async function checkLogin() {
-                // Fitur Reset: Jika URL ?reset=true, hapus hash lama
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.has('reset')) {
-                    localStorage.removeItem(HASHED_PASSWORD_KEY);
-                    showInfoModal('Password cache direset. Silakan login lagi.', 'info');
-                    // Hapus parameter dari URL agar tidak reset terus
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                }
-
-                const storedHash = localStorage.getItem(HASHED_PASSWORD_KEY);
-                
-                if (!storedHash) {
-                    // Belum pernah login / hash tidak ada
-                    loadingOverlay.style.display = 'none';
-                    loginScreen.style.display = 'flex';
-                    return;
-                }
-
-                try {
-                    const correctHash = await simpleHash(SUPER_SECRET_PASSWORD);
-                    if (storedHash === correctHash) {
-                        // Hash cocok, login berhasil
-                        loginScreen.style.display = 'none';
-                        initializeAppService(); // Mulai aplikasi
-                    } else {
-                        // Hash ada tapi salah (mungkin password diganti?)
-                        loadingOverlay.style.display = 'none';
-                        loginScreen.style.display = 'flex';
-                        loginError.textContent = "Kata sandi tersimpan salah. Hubungi admin.";
-                        loginError.style.display = 'block';
-                    }
-                } catch (e) {
-                    console.error("Error hashing:", e);
-                    loadingOverlay.style.display = 'none';
-                    loginScreen.style.display = 'flex';
-                }
-            }
-
-            async function handleLoginAttempt(event) {
-                event.preventDefault();
-                const passwordInput = document.getElementById('password').value;
-                
-                if (passwordInput === SUPER_SECRET_PASSWORD) {
-                    // Kata sandi benar
-                    try {
-                        const hashToStore = await simpleHash(passwordInput);
-                        localStorage.setItem(HASHED_PASSWORD_KEY, hashToStore);
-                        
-                        // Sembunyikan login dan mulai aplikasi
-                        loginScreen.style.display = 'none';
-                        loadingOverlay.style.display = 'flex'; // Tampilkan loading saat init
-                        initializeAppService();
-                        
-                    } catch (e) {
-                        console.error("Error hashing/storing password:", e);
-                        loginError.textContent = "Terjadi error. Coba lagi.";
-                        loginError.style.display = 'block';
-                    }
-                } else {
-                    // Kata sandi salah
-                    loginError.textContent = "Kata sandi salah.";
-                    loginError.style.display = 'block';
-                }
-            }
-
-
-            // Setup listener real-time (onSnapshot) untuk PELANGGAN
-            function setupSnapshotListener() {
-                if (unsubscribeSnap) {
-                    unsubscribeSnap(); // Hentikan listener lama jika ada
-                }
-
-                unsubscribeSnap = onSnapshot(customersCollection, (snapshot) => {
-                    customersData = [];
-                    snapshot.forEach((doc) => {
-                        customersData.push({ id: doc.id, ...doc.data() });
-                    });
-                    
-                    // Urutkan data berdasarkan nama
-                    customersData.sort((a, b) => a.nama.localeCompare(b.nama));
-                    
-                    renderCustomers(currentFilter);
-                    calculateTotalBill();
-                    updateFilterCounts();
-                    updateAnalytics(); // Update data di Home
-                    loadingOverlay.style.display = 'none';
-                    
-                }, (error) => {
-                    console.error("Error listening to snapshot:", error);
-                    showInfoModal("Error mengambil data real-time.", "error");
-                    loadingOverlay.style.display = 'none';
-                });
-            }
-            
-            // Setup listener real-time (onSnapshot) untuk PENGATURAN
-            function setupSettingsListener() {
-                if (unsubscribeSettingsSnap) {
-                    unsubscribeSettingsSnap();
-                }
-
-                unsubscribeSettingsSnap = onSnapshot(settingsDocRef, (doc) => {
-                    if (doc.exists()) {
-                        appSettings = { ...appSettings, ...doc.data() };
-                    } else {
-                        // Jika belum ada settings, buat default
-                        setDoc(settingsDocRef, appSettings).catch(e => console.error("Could not create default settings", e));
-                    }
-                    updateUIForSettings();
-                }, (error) => {
-                    console.error("Error listening to settings:", error);
-                });
-            }
-            
-            // Update UI berdasarkan settings
-            function updateUIForSettings() {
-                appTitleHeader.textContent = appSettings.namaUsaha || "Billing App";
-                document.getElementById('namaUsaha').value = appSettings.namaUsaha;
-                document.getElementById('templateWa').value = appSettings.templateWa;
-            }
-
-            // Fungsi untuk merender daftar pelanggan
-            function renderCustomers(filter) {
-                customerList.innerHTML = '';
-                
-                let filteredCustomers = customersData;
-
-                if (filter === "lunas") {
-                    filteredCustomers = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0);
-                } else if (filter === "belum-bayar") {
-                    filteredCustomers = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) > 0);
-                } else if (filter === "ada-tunggakan") {
-                    filteredCustomers = customersData.filter(c => (c.tunggakan || 0) > 0);
-                }
-
-                if (filteredCustomers.length === 0) {
-                    emptyState.classList.remove('hidden');
-                    customerList.classList.add('hidden');
-                } else {
-                    emptyState.classList.add('hidden');
-                    customerList.classList.remove('hidden');
-                }
-
-                filteredCustomers.forEach(customer => {
-                    const totalTagihan = (customer.tunggakan || 0) + (customer.tagihanBulanIni || 0);
-                    const isLunas = totalTagihan === 0;
-
-                    const card = document.createElement('div');
-                    card.className = `clean-card p-5 flex flex-col justify-between ${isLunas ? 'status-border-lunas' : 'status-border-tunggak'}`;
-                    
-                    card.innerHTML = `
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <h3 class="text-lg font-semibold text-gray-800">${customer.nama}</h3>
-                                <div class="flex space-x-0">
-                                    <button class="btn-icon-minimal btn-edit" data-id="${customer.id}" title="Edit Pelanggan">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                                            <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
-                                            <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.18l3.75-3.75a1.651 1.651 0 0 1 2.333 0L8.41 7.39a1.651 1.651 0 0 1 0 2.333l-2.021 2.021a1.651 1.651 0 0 1-2.333 0l-3.39-3.39Zm12.021 0a1.651 1.651 0 0 1 0-1.18l3.75-3.75a1.651 1.651 0 0 1 2.333 0L21.09 7.39a1.651 1.651 0 0 1 0 2.333l-2.021 2.021a1.651 1.651 0 0 1-2.333 0l-3.39-3.39Z" clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
-                                    <button class="btn-icon-minimal btn-prorata" data-id="${customer.id}" title="Tagihan Prorata">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                                            <path fill-rule="evenodd" d="M10 1.75a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Zm0 4.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Zm0 4.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Zm0 4.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
-                                    ${!isLunas ? `
-                                    <button class="btn-icon-minimal btn-tagih" data-id="${customer.id}" title="Buat Tagihan Manual">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                                          <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
-                                    ` : ''}
-                                    <button class="btn-icon-minimal btn-delete" data-id="${customer.id}" title="Hapus">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                                            <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 0 0-.53 1.025l.155.433c.365.966.746 1.925 1.15 2.872A8.9 8.9 0 0 0 8 13.5a.75.75 0 0 0 1.5 0c0-1.01.12-1.98.34-2.923.404-.947.785-1.906 1.15-2.872l.155-.433a.75.75 0 0 0-.53-1.025c-.78-.122-1.57-.22-2.365-.298V3.75A2.75 2.75 0 0 0 8.75 1ZM6.082 8.75c-.351-.81-.676-1.583-.976-2.316l-.008-.02-.013-.036a.75.75 0 0 1 1.025-.53l.433.155c.78.28 1.557.534 2.306.756a.75.75 0 0 0 .588 0c.749-.222 1.526-.476 2.306-.756l.433-.155a.75.75 0 0 1 1.025.53l-.013.036-.008.02c-.3.732-.625 1.506-.976 2.316a51.64 51.64 0 0 1-.84 1.953.75.75 0 0 0 .346 1.039l.23.115a.75.75 0 0 1 0 1.29l-.23.115a.75.75 0 0 0-.346 1.039c.27.625.568 1.28.84 1.953.301.732.625 1.506.976 2.316l.008.02.013.036a.75.75 0 0 1-1.025.53l-.433-.155c-.78-.28-1.557-.534-2.306-.756a.75.75 0 0 0-.588 0c-.749-.222-1.526-.476-2.306-.756l-.433-.155a.75.75 0 0 1-1.025-.53l.013-.036.008.02c.3-.732.625-1.506.976-2.316.27-.625.568-1.28.84-1.953a.75.75 0 0 0-.346-1.039l-.23-.115a.75.75 0 0 1 0-1.29l.23-.115a.75.75 0 0 0 .346-1.039c-.27-.625-.568-1.28-.84-1.953Z" clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                            <p class="text-sm text-gray-500">${customer.paket} (${customer.noHp || 'No HP'})</p>
-                            <p class="text-sm text-gray-500 truncate">${customer.alamat || 'Tidak ada alamat'}</p>
-                            
-                            <div class="mt-4 pt-4 border-t border-gray-100">
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-xs text-gray-500">Harga Paket</span>
-                                    <span class="text-sm font-medium text-gray-700">${formatRupiah(customer.harga || 0)}</span>
-                                </div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-xs text-gray-500">Tunggakan</span>
-                                    <span class="text-sm font-medium text-gray-700">${formatRupiah(customer.tunggakan || 0)}</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-sm font-semibold text-gray-800">Total Tagihan</span>
-                                    <span class="text-lg font-bold ${isLunas ? 'text-green-600' : 'text-red-600'}">${formatRupiah(totalTagihan)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mt-5 flex ${isLunas ? 'justify-end' : 'justify-between'} items-center">
-                            ${isLunas ? `
-                                <span class="text-sm font-semibold text-green-600 flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 mr-1">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
-                                    </svg>
-                                    LUNAS
-                                </span>
-                            ` : `
-                                <button class="btn-action-card btn-bayar w-full mr-2" data-id="${customer.id}">
-                                    Bayar
-                                </button>
-                                <button class="btn-action-card-green btn-wa w-full ml-2" data-id="${customer.id}">
-                                    Kirim WA
-                                </button>
-                            `}
-                        </div>
-                    `;
-                    
-                    customerList.appendChild(card);
-                });
-            }
-
-            // Fungsi utilitas format Rupiah
-            function formatRupiah(angka) {
-                if (angka === null || angka === undefined) angka = 0;
-                return new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                }).format(angka);
-            }
-
-            // Hitung total tagihan header
-            function calculateTotalBill() {
-                const total = customersData.reduce((acc, c) => acc + (c.tunggakan || 0) + (c.tagihanBulanIni || 0), 0);
-                totalTagihanHeader.textContent = `Total Tagihan: ${formatRupiah(total)}`;
-            }
-            
-            // Update data analitik di Halaman Home
-            function updateAnalytics() {
-                const totalPelanggan = customersData.length;
-                const totalTagihanAktif = customersData.reduce((acc, c) => acc + (c.tunggakan || 0) + (c.tagihanBulanIni || 0), 0);
-                const lunasCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0).length;
-                const belumLunasCount = totalPelanggan - lunasCount;
-                
-                document.getElementById('analytic-total-tagihan').textContent = formatRupiah(totalTagihanAktif);
-                document.getElementById('analytic-total-pelanggan').textContent = totalPelanggan;
-                document.getElementById('analytic-lunas').textContent = lunasCount;
-                document.getElementById('analytic-belum-lunas').textContent = belumLunasCount;
-            }
-
-            // Update jumlah count di filter tabs
-            function updateFilterCounts() {
-                const belumBayarCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) > 0).length;
-                const adaTunggakanCount = customersData.filter(c => (c.tunggakan || 0) > 0).length;
-
-                const countBelumBayar = document.getElementById('count-belum-bayar');
-                const countAdaTunggakan = document.getElementById('count-ada-tunggakan');
-
-                countBelumBayar.textContent = belumBayarCount > 9 ? '9+' : belumBayarCount;
-                countAdaTunggakan.textContent = adaTunggakanCount > 9 ? '9+' : adaTunggakanCount;
-
-                countBelumBayar.classList.toggle('hidden', belumBayarCount === 0);
-                countAdaTunggakan.classList.toggle('hidden', adaTunggakanCount === 0);
-            }
-
-            // Fungsi toggle modal
-            function toggleModal(modalId, show = true) {
-                const modal = document.getElementById(modalId);
-                if (!modal) return;
-                
-                const content = modal.querySelector('.modal-content');
-
-                if (show) {
-                    modal.classList.replace('hidden', 'flex');
-                    setTimeout(() => {
-                        if (content) {
-                            content.classList.remove('opacity-0', 'scale-95');
-                            content.classList.add('opacity-100', 'scale-100');
-                        }
-                    }, 10);
-                } else {
-                    if (content) {
-                        content.classList.remove('opacity-100', 'scale-100');
-                        content.classList.add('opacity-0', 'scale-95');
-                    }
-                    setTimeout(() => {
-                        modal.classList.replace('flex', 'hidden');
-                    }, 250); // Sesuaikan dengan durasi transisi
-                }
-            }
-            
-            // Tampilkan notifikasi
-            function showInfoModal(message, type = "success") {
-                const infoModal = document.getElementById('infoModal');
-                const infoMessage = document.getElementById('infoMessage');
-
-                infoMessage.textContent = message;
-                
-                // Hapus kelas warna sebelumnya
-                infoModal.classList.remove('bg-green-600', 'bg-red-600', 'bg-blue-600');
-
-                if (type === 'error') {
-                    infoModal.classList.add('bg-red-600');
-                } else if (type === 'info') {
-                    infoModal.classList.add('bg-blue-600');
-                } else {
-                    infoModal.classList.add('bg-green-600');
-                }
-
-                infoModal.classList.remove('hidden');
-                setTimeout(() => {
-                    infoModal.classList.remove('opacity-0');
-                }, 10);
-                
-                setTimeout(() => {
-                    infoModal.classList.add('opacity-0');
-                    setTimeout(() => {
-                        infoModal.classList.add('hidden');
-                    }, 300);
-                }, 3000);
-            }
-
-            // Tampilkan modal tambah pelanggan
-            function showCustomerModal(customer = null) {
-                const form = document.getElementById('customerForm');
-                form.reset();
-                document.getElementById('customerId').value = '';
-                
-                if (customer) {
-                    // Mode Edit
-                    document.getElementById('modalTitle').textContent = 'Edit Pelanggan';
-                    document.getElementById('customerId').value = customer.id;
-                    document.getElementById('nama').value = customer.nama;
-                    document.getElementById('paket').value = customer.paket;
-                    document.getElementById('harga').value = customer.harga;
-                    document.getElementById('noHp').value = customer.noHp;
-                    document.getElementById('alamat').value = customer.alamat;
-                } else {
-                    // Mode Tambah
-                    document.getElementById('modalTitle').textContent = 'Tambah Pelanggan Baru';
-                }
-                toggleModal('customerModal', true);
-            }
-
-            // Simpan data pelanggan (Tambah/Edit)
-            async function saveCustomer(event) {
-                event.preventDefault();
-                const customerId = document.getElementById('customerId').value;
-                const harga = parseFloat(document.getElementById('harga').value) || 0;
-                const customerData = {
-                    nama: document.getElementById('nama').value,
-                    paket: document.getElementById('paket').value,
-                    harga: harga,
-                    noHp: document.getElementById('noHp').value,
-                    alamat: document.getElementById('alamat').value,
-                };
-
-                try {
-                    if (customerId) {
-                        // Update
-                        const customerRef = doc(customersCollection, customerId);
-                        // Dapatkan data lama untuk menjaga tunggakan
-                        const customerSnap = await getDoc(customerRef);
-                        const existingData = customerSnap.data();
-                        
-                        await updateDoc(customerRef, {
-                            ...customerData,
-                            tunggakan: existingData.tunggakan || 0, // Jaga tunggakan
-                            // Cek jika harga paket berubah, sesuaikan tagihanBulanIni JIKA BELUM LUNAS
-                            tagihanBulanIni: (customerData.harga !== existingData.harga && existingData.tagihanBulanIni > 0) ? customerData.harga : (existingData.tagihanBulanIni || 0), 
-                        });
-                        showInfoModal('Data pelanggan berhasil diperbarui!');
-                    } else {
-                        // Add
-                        await addDoc(customersCollection, {
-                            ...customerData,
-                            tunggakan: 0,
-                            tagihanBulanIni: harga, // <-- PERBAIKAN: Tagihan awal = harga
-                            createdAt: new Date().toISOString()
-                        });
-                        showInfoModal('Pelanggan baru berhasil ditambahkan!');
-                    }
-                    toggleModal('customerModal', false);
-                } catch (error) {
-                    console.error("Error saving customer:", error);
-                    showInfoModal('Gagal menyimpan data pelanggan.', 'error');
-                }
-            }
-
-            // Tampilkan modal pembayaran
-            function showPaymentModal(id) {
-                const customer = customersData.find(c => c.id === id);
-                if (!customer) return;
-
-                const harga = customer.harga || 0;
-                const tunggakan = customer.tunggakan || 0;
-                const tagihanBulanIni = customer.tagihanBulanIni || 0;
-                const total = tunggakan + tagihanBulanIni; // Total tagihan adalah tunggakan + tagihan bulan ini
-
-                document.getElementById('paymentCustomerName').textContent = customer.nama;
-                document.getElementById('paymentHarga').textContent = formatRupiah(harga); // Ini harga paket
-                document.getElementById('paymentTunggakan').textContent = formatRupiah(tunggakan);
-                document.getElementById('paymentTotal').textContent = formatRupiah(total);
-                
-                document.getElementById('paymentAmount').value = '';
-                document.getElementById('paymentCustomerId').value = id;
-                document.getElementById('paymentTotalAmount').value = total;
-
-                toggleModal('paymentModal', true);
-            }
-
-            // Proses pembayaran (Lunas / Manual)
-            async function handlePayment(isLunas = false) {
-                const id = document.getElementById('paymentCustomerId').value;
-                const totalTagihan = parseFloat(document.getElementById('paymentTotalAmount').value);
-                let jumlahBayar;
-
-                if (isLunas) {
-                    jumlahBayar = totalTagihan;
-                } else {
-                    jumlahBayar = parseFloat(document.getElementById('paymentAmount').value) || 0;
-                }
-
-                if (jumlahBayar <= 0 && !isLunas && totalTagihan > 0) { // Izinkan bayar 0 jika memang tagihan 0
-                    showInfoModal('Jumlah bayar tidak valid.', 'error');
-                    return;
-                }
-
-                let sisaTunggakan = totalTagihan - jumlahBayar;
-                if (sisaTunggakan < 0) sisaTunggakan = 0; // Jika bayar lebih, sisa 0 (tidak ada kembalian)
-
-                try {
-                    const customerRef = doc(customersCollection, id);
                     await updateDoc(customerRef, {
-                        tunggakan: sisaTunggakan,
-                        tagihanBulanIni: 0 // Tagihan bulan ini lunas (atau jadi tunggakan)
+                        ...customerData,
+                        tunggakan: existingData.tunggakan || 0, // Jaga tunggakan
+                        // Cek jika harga paket berubah, sesuaikan tagihanBulanIni JIKA BELUM LUNAS
+                        tagihanBulanIni: (customerData.harga !== existingData.harga && existingData.tagihanBulanIni > 0) ? customerData.harga : (existingData.tagihanBulanIni || 0), 
                     });
-                    showInfoModal('Pembayaran berhasil!');
-                    toggleModal('paymentModal', false);
-                } catch (error) {
-                    console.error("Error processing payment:", error);
-                    showInfoModal('Gagal memproses pembayaran.', 'error');
-                }
-            }
-            
-            // Tampilkan modal tagihan (1 pelanggan)
-            function showTagihanModal(id) {
-                document.getElementById('tagihanCustomerId').value = id;
-                toggleModal('tagihanModal', true);
-            }
-
-            // Proses buat tagihan (1 pelanggan)
-            async function generateTagihan() {
-                const id = document.getElementById('tagihanCustomerId').value;
-                const customer = customersData.find(c => c.id === id);
-                if (!customer) return;
-
-                const hargaPaket = customer.harga || 0;
-                const tagihanBaru = (customer.tagihanBulanIni || 0) + hargaPaket;
-
-                try {
-                    const customerRef = doc(customersCollection, id);
-                    await updateDoc(customerRef, {
-                        tagihanBulanIni: tagihanBaru
-                    });
-                    showInfoModal('Tagihan berhasil dibuat!');
-                    toggleModal('tagihanModal', false);
-                } catch (error) {
-                    console.error("Error generating tagihan:", error);
-                    showInfoModal('Gagal membuat tagihan.', 'error');
-                }
-            }
-
-            // Tampilkan modal prorata
-            function showProrataModal(id) {
-                const customer = customersData.find(c => c.id === id);
-                if (!customer) return;
-
-                document.getElementById('prorataCustomerId').value = id;
-                document.getElementById('prorataHarga').value = customer.harga || 0;
-                
-                // Reset form
-                document.getElementById('tglMulai').value = '';
-                document.getElementById('tglAkhir').value = '';
-                document.getElementById('hariPeriodik').value = 30;
-                document.getElementById('prorataResult').classList.add('hidden');
-                
-                toggleModal('prorataModal', true);
-            }
-
-            // Hitung prorata saat tanggal berubah
-            function calculateProrata() {
-                const tglMulai = document.getElementById('tglMulai').value;
-                const tglAkhir = document.getElementById('tglAkhir').value;
-                const hariPeriodik = parseInt(document.getElementById('hariPeriodik').value) || 30;
-                const harga = parseFloat(document.getElementById('prorataHarga').value) || 0;
-
-                if (tglMulai && tglAkhir && hariPeriodik > 0) {
-                    const dateMulai = new Date(tglMulai);
-                    const dateAkhir = new Date(tglAkhir);
-                    
-                    if (dateAkhir < dateMulai) {
-                        document.getElementById('prorataResult').classList.add('hidden');
-                        return;
-                    }
-
-                    const diffTime = Math.abs(dateAkhir - dateMulai);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Termasuk hari mulai
-                    
-                    const tagihanProrata = (diffDays / hariPeriodik) * harga;
-
-                    document.getElementById('prorataHari').textContent = diffDays;
-                    document.getElementById('prorataTotal').textContent = formatRupiah(tagihanProrata);
-                    document.getElementById('prorataResult').classList.remove('hidden');
+                    showInfoModal('Data pelanggan berhasil diperbarui!');
                 } else {
+                    // Add
+                    await addDoc(customersCollection, {
+                        ...customerData,
+                        tunggakan: 0,
+                        tagihanBulanIni: harga, // <-- PERBAIKAN: Tagihan awal = harga
+                        createdAt: new Date().toISOString()
+                    });
+                    showInfoModal('Pelanggan baru berhasil ditambahkan!');
+                }
+                toggleModal('customerModal', false);
+            } catch (error) {
+                console.error("Error saving customer:", error);
+                showInfoModal('Gagal menyimpan data pelanggan.', 'error');
+            }
+        }
+
+        // Tampilkan modal pembayaran
+        function showPaymentModal(id) {
+            const customer = customersData.find(c => c.id === id);
+            if (!customer) return;
+
+            const harga = customer.harga || 0;
+            const tunggakan = customer.tunggakan || 0;
+            const tagihanBulanIni = customer.tagihanBulanIni || 0;
+            const total = tunggakan + tagihanBulanIni; // Total tagihan adalah tunggakan + tagihan bulan ini
+
+            document.getElementById('paymentCustomerName').textContent = customer.nama;
+            document.getElementById('paymentHarga').textContent = formatRupiah(harga); // Ini harga paket
+            document.getElementById('paymentTunggakan').textContent = formatRupiah(tunggakan);
+            document.getElementById('paymentTotal').textContent = formatRupiah(total);
+            
+            document.getElementById('paymentAmount').value = '';
+            document.getElementById('paymentCustomerId').value = id;
+            document.getElementById('paymentTotalAmount').value = total;
+
+            toggleModal('paymentModal', true);
+        }
+
+        // Proses pembayaran (Lunas / Manual)
+        async function handlePayment(isLunas = false) {
+            const id = document.getElementById('paymentCustomerId').value;
+            const totalTagihan = parseFloat(document.getElementById('paymentTotalAmount').value);
+            let jumlahBayar;
+
+            if (isLunas) {
+                jumlahBayar = totalTagihan;
+            } else {
+                jumlahBayar = parseFloat(document.getElementById('paymentAmount').value) || 0;
+            }
+
+            if (jumlahBayar <= 0 && !isLunas && totalTagihan > 0) { // Izinkan bayar 0 jika memang tagihan 0
+                showInfoModal('Jumlah bayar tidak valid.', 'error');
+                return;
+            }
+
+            let sisaTunggakan = totalTagihan - jumlahBayar;
+            if (sisaTunggakan < 0) sisaTunggakan = 0; // Jika bayar lebih, sisa 0 (tidak ada kembalian)
+
+            try {
+                const customerRef = doc(customersCollection, id);
+                await updateDoc(customerRef, {
+                    tunggakan: sisaTunggakan,
+                    tagihanBulanIni: 0 // Tagihan bulan ini lunas (atau jadi tunggakan)
+                });
+                showInfoModal('Pembayaran berhasil!');
+                toggleModal('paymentModal', false);
+            } catch (error) {
+                console.error("Error processing payment:", error);
+                showInfoModal('Gagal memproses pembayaran.', 'error');
+            }
+        }
+        
+        // Tampilkan modal tagihan (1 pelanggan)
+        function showTagihanModal(id) {
+            document.getElementById('tagihanCustomerId').value = id;
+            toggleModal('tagihanModal', true);
+        }
+
+        // Proses buat tagihan (1 pelanggan)
+        async function generateTagihan() {
+            const id = document.getElementById('tagihanCustomerId').value;
+            const customer = customersData.find(c => c.id === id);
+            if (!customer) return;
+
+            const hargaPaket = customer.harga || 0;
+            const tagihanBaru = (customer.tagihanBulanIni || 0) + hargaPaket;
+
+            try {
+                const customerRef = doc(customersCollection, id);
+                await updateDoc(customerRef, {
+                    tagihanBulanIni: tagihanBaru
+                });
+                showInfoModal('Tagihan berhasil dibuat!');
+                toggleModal('tagihanModal', false);
+            } catch (error) {
+                console.error("Error generating tagihan:", error);
+                showInfoModal('Gagal membuat tagihan.', 'error');
+            }
+        }
+
+        // Tampilkan modal prorata
+        function showProrataModal(id) {
+            const customer = customersData.find(c => c.id === id);
+            if (!customer) return;
+
+            document.getElementById('prorataCustomerId').value = id;
+            document.getElementById('prorataHarga').value = customer.harga || 0;
+            
+            // Reset form
+            document.getElementById('tglMulai').value = '';
+            document.getElementById('tglAkhir').value = '';
+            document.getElementById('hariPeriodik').value = 30;
+            document.getElementById('prorataResult').classList.add('hidden');
+            
+            toggleModal('prorataModal', true);
+        }
+
+        // Hitung prorata saat tanggal berubah
+        function calculateProrata() {
+            const tglMulai = document.getElementById('tglMulai').value;
+            const tglAkhir = document.getElementById('tglAkhir').value;
+            const hariPeriodik = parseInt(document.getElementById('hariPeriodik').value) || 30;
+            const harga = parseFloat(document.getElementById('prorataHarga').value) || 0;
+
+            if (tglMulai && tglAkhir && hariPeriodik > 0) {
+                const dateMulai = new Date(tglMulai);
+                const dateAkhir = new Date(tglAkhir);
+                
+                if (dateAkhir < dateMulai) {
                     document.getElementById('prorataResult').classList.add('hidden');
-                }
-            }
-
-            // Buat tagihan prorata
-            async function handleProrata() {
-                const id = document.getElementById('prorataCustomerId').value;
-                const totalText = document.getElementById('prorataTotal').textContent;
-                
-                // Konversi format Rupiah (Rp 123.456) ke angka (123456)
-                const tagihanProrata = parseFloat(totalText.replace(/[^0-9]/g, '')) || 0;
-
-                if (tagihanProrata <= 0) {
-                    showInfoModal('Tagihan prorata tidak valid.', 'error');
                     return;
                 }
 
-                const customer = customersData.find(c => c.id === id);
-                if (!customer) return;
+                const diffTime = Math.abs(dateAkhir - dateMulai);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Termasuk hari mulai
+                
+                const tagihanProrata = (diffDays / hariPeriodik) * harga;
 
-                const tagihanBaru = (customer.tagihanBulanIni || 0) + tagihanProrata;
-
-                try {
-                    const customerRef = doc(customersCollection, id);
-                    await updateDoc(customerRef, {
-                        tagihanBulanIni: tagihanBaru
-                    });
-                    showInfoModal('Tagihan prorata berhasil ditambahkan!');
-                    toggleModal('prorataModal', false);
-                } catch (error) {
-                    console.error("Error creating prorata bill:", error);
-                    showInfoModal('Gagal membuat tagihan prorata.', 'error');
-                }
+                document.getElementById('prorataHari').textContent = diffDays;
+                document.getElementById('prorataTotal').textContent = formatRupiah(tagihanProrata);
+                document.getElementById('prorataResult').classList.remove('hidden');
+            } else {
+                document.getElementById('prorataResult').classList.add('hidden');
             }
+        }
+
+        // Buat tagihan prorata
+        async function handleProrata() {
+            const id = document.getElementById('prorataCustomerId').value;
+            const totalText = document.getElementById('prorataTotal').textContent;
             
-            // Tampilkan modal WA
-            function showWaModal(id) {
-                const customer = customersData.find(c => c.id === id);
-                if (!customer) return;
-                
-                let noHp = customer.noHp || '';
-                // Format nomor HP (pastikan depannya 62, bukan 0)
-                if (noHp.startsWith('0')) {
-                    noHp = '62' + noHp.substring(1);
-                }
-                if (!noHp.startsWith('62')) {
-                    showInfoModal('Nomor HP tidak valid. Harus diawali 0 atau 62.', 'error');
-                    return;
-                }
+            // Konversi format Rupiah (Rp 123.456) ke angka (123456)
+            const tagihanProrata = parseFloat(totalText.replace(/[^0-9]/g, '')) || 0;
 
-                const totalTagihan = (customer.tunggakan || 0) + (customer.tagihanBulanIni || 0);
-                
-                let message = appSettings.templateWa;
-                message = message.replace(/{nama}/g, customer.nama);
-                message = message.replace(/{total_tagihan}/g, formatRupiah(totalTagihan));
-                message = message.replace(/{nama_usaha}/g, appSettings.namaUsaha);
-                
-                const waLink = `https://wa.me/${noHp}?text=${encodeURIComponent(message)}`;
-                
-                document.getElementById('waCustomerName').textContent = customer.nama;
-                document.getElementById('waCustomerPhone').textContent = customer.noHp;
-                document.getElementById('waMessagePreview').value = message;
-                document.getElementById('btn-kirim-wa').href = waLink;
-                
-                toggleModal('waModal', true);
+            if (tagihanProrata <= 0) {
+                showInfoModal('Tagihan prorata tidak valid.', 'error');
+                return;
             }
+
+            const customer = customersData.find(c => c.id === id);
+            if (!customer) return;
+
+            const tagihanBaru = (customer.tagihanBulanIni || 0) + tagihanProrata;
+
+            try {
+                const customerRef = doc(customersCollection, id);
+                await updateDoc(customerRef, {
+                    tagihanBulanIni: tagihanBaru
+                });
+                showInfoModal('Tagihan prorata berhasil ditambahkan!');
+                toggleModal('prorataModal', false);
+            } catch (error) {
+                console.error("Error creating prorata bill:", error);
+                showInfoModal('Gagal membuat tagihan prorata.', 'error');
+            }
+        }
+        
+        // Tampilkan modal WA
+        function showWaModal(id) {
+            const customer = customersData.find(c => c.id === id);
+            if (!customer) return;
             
-            // Copy pesan WA ke clipboard
-            function copyWaMessage() {
-                const message = document.getElementById('waMessagePreview').value;
+            let noHp = customer.noHp || '';
+            // Format nomor HP (pastikan depannya 62, bukan 0)
+            if (noHp.startsWith('0')) {
+                noHp = '62' + noHp.substring(1);
+            }
+            if (!noHp.startsWith('62')) {
+                showInfoModal('Nomor HP tidak valid. Harus diawali 0 atau 62.', 'error');
+                return;
+            }
+
+            const totalTagihan = (customer.tunggakan || 0) + (customer.tagihanBulanIni || 0);
+            
+            let message = appSettings.templateWa;
+            message = message.replace(/{nama}/g, customer.nama);
+            message = message.replace(/{total_tagihan}/g, formatRupiah(totalTagihan));
+            message = message.replace(/{nama_usaha}/g, appSettings.namaUsaha);
+            
+            const waLink = `https://wa.me/${noHp}?text=${encodeURIComponent(message)}`;
+            
+            document.getElementById('waCustomerName').textContent = customer.nama;
+            document.getElementById('waCustomerPhone').textContent = customer.noHp;
+            document.getElementById('waMessagePreview').value = message;
+            document.getElementById('btn-kirim-wa').href = waLink;
+            
+            toggleModal('waModal', true);
+        }
+        
+        // Copy pesan WA ke clipboard
+        function copyWaMessage() {
+            const message = document.getElementById('waMessagePreview').value;
+            
+            // Trik untuk menyalin teks
+            const textarea = document.createElement('textarea');
+            textarea.value = message;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showInfoModal('Pesan berhasil disalin!');
+            } catch (err) {
+                console.error('Gagal menyalin pesan: ', err);
+                showInfoModal('Gagal menyalin pesan.', 'error');
+            }
+            document.body.removeChild(textarea);
+            toggleModal('waModal', false);
+        }
+
+        // Tampilkan modal hapus
+        function showDeleteModal(id) {
+            document.getElementById('deleteCustomerId').value = id;
+            toggleModal('deleteModal', true);
+        }
+
+        // Hapus pelanggan
+        async function deleteCustomer() {
+            const id = document.getElementById('deleteCustomerId').value;
+            try {
+                await deleteDoc(doc(customersCollection, id));
+                showInfoModal('Pelanggan berhasil dihapus.');
+                toggleModal('deleteModal', false);
+            } catch (error) {
+                console.error("Error deleting customer:", error);
+                showInfoModal('Gagal menghapus pelanggan.', 'error');
+            }
+        }
+
+        // Tampilkan modal hapus SEMUA
+        function showDeleteSemuaModal() {
+            toggleModal('deleteSemuaModal', true);
+            toggleModal('kebab-menu-modal', false); // Tutup kebab menu
+        }
+
+        // Hapus SEMUA pelanggan
+        async function deleteAllCustomers() {
+            toggleModal('deleteSemuaModal', false);
+            loadingOverlay.style.display = 'flex';
+
+            try {
+                const querySnap = await getDocs(customersCollection);
+                const batch = writeBatch(db);
                 
-                // Trik untuk menyalin teks
-                const textarea = document.createElement('textarea');
-                textarea.value = message;
-                document.body.appendChild(textarea);
-                textarea.select();
-                try {
-                    document.execCommand('copy');
-                    showInfoModal('Pesan berhasil disalin!');
-                } catch (err) {
-                    console.error('Gagal menyalin pesan: ', err);
-                    showInfoModal('Gagal menyalin pesan.', 'error');
-                }
-                document.body.removeChild(textarea);
-                toggleModal('waModal', false);
+                querySnap.forEach((doc) => {
+                    batch.delete(doc.ref);
+                });
+
+                await batch.commit();
+                showInfoModal('SEMUA data pelanggan telah dihapus.');
+            } catch (error) {
+                console.error("Error deleting all customers:", error);
+                showInfoModal('Gagal menghapus semua data.', 'error');
+            } finally {
+                loadingOverlay.style.display = 'none';
             }
+        }
 
-            // Tampilkan modal hapus
-            function showDeleteModal(id) {
-                document.getElementById('deleteCustomerId').value = id;
-                toggleModal('deleteModal', true);
-            }
-
-            // Hapus pelanggan
-            async function deleteCustomer() {
-                const id = document.getElementById('deleteCustomerId').value;
-                try {
-                    await deleteDoc(doc(customersCollection, id));
-                    showInfoModal('Pelanggan berhasil dihapus.');
-                    toggleModal('deleteModal', false);
-                } catch (error) {
-                    console.error("Error deleting customer:", error);
-                    showInfoModal('Gagal menghapus pelanggan.', 'error');
-                }
-            }
-
-            // Tampilkan modal hapus SEMUA
-            function showDeleteSemuaModal() {
-                toggleModal('deleteSemuaModal', true);
-                toggleModal('kebab-menu-modal', false); // Tutup kebab menu
-            }
-
-            // Hapus SEMUA pelanggan
-            async function deleteAllCustomers() {
-                toggleModal('deleteSemuaModal', false);
-                loadingOverlay.style.display = 'flex';
-
-                try {
-                    const querySnap = await getDocs(customersCollection);
-                    const batch = writeBatch(db);
-                    
-                    querySnap.forEach((doc) => {
-                        batch.delete(doc.ref);
-                    });
-
-                    await batch.commit();
-                    showInfoModal('SEMUA data pelanggan telah dihapus.');
-                } catch (error) {
-                    console.error("Error deleting all customers:", error);
-                    showInfoModal('Gagal menghapus semua data.', 'error');
-                } finally {
-                    loadingOverlay.style.display = 'none';
-                }
-            }
-
-            // Tampilkan modal import
-            function showImportModal() {
-                document.getElementById('excelFile').value = ''; // Reset file input
-                toggleModal('importModal', true);
-                toggleModal('kebab-menu-modal', false); // Tutup kebab menu
-            }
+        // Tampilkan modal import
+        function showImportModal() {
+            document.getElementById('excelFile').value = ''; // Reset file input
+            toggleModal('importModal', true);
+            toggleModal('kebab-menu-modal', false); // Tutup kebab menu
+        }
 
         // Import data dari Excel
         function importExcel() {
@@ -1603,225 +1511,263 @@
             reader.readAsArrayBuffer(file);
         }
 
-            // Buat tagihan untuk SEMUA pelanggan
-            async function generateTagihanSemua() {
-                toggleModal('kebab-menu-modal', false);
-                loadingOverlay.style.display = 'flex';
+        // Buat tagihan untuk SEMUA pelanggan
+        async function generateTagihanSemua() {
+            toggleModal('kebab-menu-modal', false);
+            loadingOverlay.style.display = 'flex';
 
-                try {
-                    const batch = writeBatch(db);
+            try {
+                const batch = writeBatch(db);
+                
+                customersData.forEach(customer => {
+                    const hargaPaket = customer.harga || 0;
+                    // Tagihan baru = tunggakan lama + tagihan bulan ini + harga paket baru
+                    // Kita pindahkan tagihanBulanIni ke tunggakan, lalu set tagihanBulanIni = hargaPaket
+                    const tunggakanBaru = (customer.tunggakan || 0) + (customer.tagihanBulanIni || 0);
+                    const tagihanBulanIniBaru = hargaPaket;
                     
-                    customersData.forEach(customer => {
-                        const hargaPaket = customer.harga || 0;
-                        // Tagihan baru = tunggakan lama + tagihan bulan ini + harga paket baru
-                        // Kita pindahkan tagihanBulanIni ke tunggakan, lalu set tagihanBulanIni = hargaPaket
-                        const tunggakanBaru = (customer.tunggakan || 0) + (customer.tagihanBulanIni || 0);
-                        const tagihanBulanIniBaru = hargaPaket;
-                        
-                        const docRef = doc(customersCollection, customer.id);
-                        batch.update(docRef, {
-                            tunggakan: tunggakanBaru,
-                            tagihanBulanIni: tagihanBulanIniBaru
-                        });
+                    const docRef = doc(customersCollection, customer.id);
+                    batch.update(docRef, {
+                        tunggakan: tunggakanBaru,
+                        tagihanBulanIni: tagihanBulanIniBaru
                     });
+                });
 
-                    await batch.commit();
-                    showInfoModal('Tagihan baru berhasil dibuat untuk semua pelanggan!');
-                } catch (error) {
-                    console.error("Error generating all bills:", error);
-                    showInfoModal('Gagal membuat tagihan massal.', 'error');
-                } finally {
-                    loadingOverlay.style.display = 'none';
-                }
+                await batch.commit();
+                showInfoModal('Tagihan baru berhasil dibuat untuk semua pelanggan!');
+            } catch (error) {
+                console.error("Error generating all bills:", error);
+                showInfoModal('Gagal membuat tagihan massal.', 'error');
+            } finally {
+                loadingOverlay.style.display = 'none';
             }
+        }
+        
+        // Simpan Pengaturan
+        async function saveSettings(event) {
+            event.preventDefault();
+            const namaUsaha = document.getElementById('namaUsaha').value;
+            const templateWa = document.getElementById('templateWa').value;
             
-            // Simpan Pengaturan
-            async function saveSettings(event) {
-                event.preventDefault();
-                const namaUsaha = document.getElementById('namaUsaha').value;
-                const templateWa = document.getElementById('templateWa').value;
-                
-                const newSettings = {
-                    namaUsaha: namaUsaha,
-                    templateWa: templateWa
-                };
-                
-                try {
-                    await setDoc(settingsDocRef, newSettings, { merge: true });
-                    showInfoModal('Pengaturan berhasil disimpan!');
-                } catch (error) {
-                    console.error("Error saving settings:", error);
-                    showInfoModal('Gagal menyimpan pengaturan.', 'error');
-                }
+            const newSettings = {
+                namaUsaha: namaUsaha,
+                templateWa: templateWa
+            };
+            
+            try {
+                await setDoc(settingsDocRef, newSettings, { merge: true });
+                showInfoModal('Pengaturan berhasil disimpan!');
+            } catch (error) {
+                console.error("Error saving settings:", error);
+                showInfoModal('Gagal menyimpan pengaturan.', 'error');
+            }
+        }
+
+        // Fungsi untuk navigasi antar tab
+        function navigateToTab(pageId, filter = null) {
+            // 1. Klik tombol nav yang sesuai
+            const navButton = document.querySelector(`.btn-nav[data-page="${pageId}"]`);
+            if (navButton) {
+                navButton.click();
+            }
+
+            // 2. Jika ada filter, terapkan
+            if (pageId === 'pelanggan' && filter) {
+                // Beri sedikit waktu agar halaman pelanggan di-render
+                setTimeout(() => {
+                    const filterButton = document.querySelector(`.tab-filter[data-filter="${filter}"]`);
+                    if (filterButton) {
+                        filterButton.click();
+                    }
+                }, 50); // 50ms delay
+            }
+        }
+
+
+        // =============================================
+        // EVENT LISTENERS (Digabungkan)
+        // =============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Logika Kunci Sandi ---
+            checkURLReset(); // Cek reset password dari URL
+            initializeLockScreen(); // Siapkan layar kunci
+            lockForm.addEventListener('submit', handleLogin); // Listener untuk form login
+
+            // --- Event Listener Navigasi Tab Bawah ---
+            const pages = document.querySelectorAll('.page');
+            const navButtons = document.querySelectorAll('.btn-nav');
+            
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const pageId = button.dataset.page;
+                    
+                    // Sembunyikan semua halaman
+                    pages.forEach(page => page.classList.remove('active'));
+                    // Tampilkan halaman yang diklik
+                    document.getElementById(`page-${pageId}`).classList.add('active');
+                    
+                    // Update status aktif tombol nav
+                    navButtons.forEach(btn => {
+                        btn.classList.add('text-gray-500', 'hover:text-indigo-600');
+                        btn.classList.remove('text-indigo-600');
+                        // Ganti ikon ke outline (jika ada)
+                        const svg = btn.querySelector('svg');
+                        if (svg) {
+                            svg.innerHTML = svg.innerHTML.replace('fill="currentColor"', 'fill="none" stroke-width="1.5" stroke="currentColor"');
+                        }
+                    });
+                    
+                    button.classList.add('text-indigo-600');
+                    button.classList.remove('text-gray-500', 'hover:text-indigo-600');
+                    // Ganti ikon ke solid (jika ada)
+                    const svg = button.querySelector('svg');
+                    if (svg) {
+                        svg.innerHTML = svg.innerHTML.replace('fill="none" stroke-width="1.5" stroke="currentColor"', 'fill="currentColor"');
+                    }
+                    
+                    // Perbarui analitik jika pindah ke Home
+                    if(pageId === 'home') {
+                        updateAnalytics();
+                    }
+                    
+                    // Tampilkan FAB hanya di halaman pelanggan
+                    document.getElementById('fab-tambah-pelanggan').classList.toggle('hidden', pageId !== 'pelanggan');
+                });
+            });
+            // Sembunyikan FAB di awal (karena Home yang aktif)
+            document.getElementById('fab-tambah-pelanggan').classList.add('hidden');
+            // Aktifkan ikon Home secara manual di awal
+            const homeNavButton = document.querySelector('.btn-nav[data-page="home"] svg');
+            if(homeNavButton) {
+                 homeNavButton.innerHTML = homeNavButton.innerHTML.replace('fill="none" stroke-width="1.5" stroke="currentColor"', 'fill="currentColor"');
             }
 
 
-            // =============================================
-            // EVENT LISTENERS
-            // =============================================
-            document.addEventListener('DOMContentLoaded', () => {
-                // Periksa login dulu, baru jalankan aplikasi
-                checkLogin();
-                
-                // --- Event Listener Navigasi Tab Bawah ---
-                const pages = document.querySelectorAll('.page');
-                const navButtons = document.querySelectorAll('.btn-nav');
-                
-                navButtons.forEach(button => {
-                    button.addEventListener('click', () => {
-                        const pageId = button.dataset.page;
-                        
-                        // Sembunyikan semua halaman
-                        pages.forEach(page => page.classList.remove('active'));
-                        // Tampilkan halaman yang diklik
-                        document.getElementById(`page-${pageId}`).classList.add('active');
-                        
-                        // Update status aktif tombol nav
-                        navButtons.forEach(btn => {
-                            btn.classList.remove('active');
-                            // Ganti ikon ke outline
-                            const svg = btn.querySelector('svg');
-                            if (svg) {
-                                svg.innerHTML = svg.innerHTML.replace('fill="currentColor"', 'fill="none" stroke-width="2" stroke="currentColor"');
-                            }
-                        });
-                        
-                        button.classList.add('active');
-                        // Ganti ikon ke solid
-                        const svg = button.querySelector('svg');
-                        if (svg) {
-                            svg.innerHTML = svg.innerHTML.replace('fill="none" stroke-width="2" stroke="currentColor"', 'fill="currentColor"');
-                        }
-                        
-                        // Perbarui analitik jika pindah ke Home
-                        if(pageId === 'home') {
-                            updateAnalytics();
-                        }
-                        
-                        // Tampilkan FAB hanya di halaman pelanggan
-                        document.getElementById('fab-tambah-pelanggan').classList.toggle('hidden', pageId !== 'pelanggan');
-                    });
-                });
-                // Sembunyikan FAB di awal (karena Home yang aktif)
-                document.getElementById('fab-tambah-pelanggan').classList.add('hidden');
-                // Aktifkan ikon Home secara manual di awal (pastikan SVG-nya solid)
-                const homeNavButton = document.querySelector('.btn-nav[data-page="home"] svg');
-                if(homeNavButton) {
-                     homeNavButton.innerHTML = homeNavButton.innerHTML.replace('fill="none" stroke-width="2" stroke="currentColor"', 'fill="currentColor"');
-                }
-
-
-                // --- Event Listener untuk Modals ---
-                
-                // Tombol Batal
-                document.querySelectorAll('.btn-cancel').forEach(btn => {
-                    btn.addEventListener('click', () => toggleModal(btn.dataset.modal, false));
-                });
-                
-                // Klik di luar modal (backdrop)
-                document.querySelectorAll('.modal-backdrop').forEach(modal => {
-                    modal.addEventListener('click', (e) => {
-                        if (e.target === modal) {
-                            toggleModal(modal.id, false);
-                        }
-                    });
-                });
-
-                // --- Event Listener Kebab Menu ---
-                const kebabMenuButton = document.getElementById('kebab-menu-button');
-                const kebabMenuModal = document.getElementById('kebab-menu-modal');
-                kebabMenuButton.addEventListener('click', () => {
-                    kebabMenuModal.classList.toggle('hidden');
-                });
-                
-                // Tutup kebab menu jika klik di luar
-                document.addEventListener('click', (e) => {
-                    if (!kebabMenuButton.contains(e.target) && !kebabMenuModal.contains(e.target)) {
-                        kebabMenuModal.classList.add('hidden');
-                    }
-                });
-
-                // Tombol di dalam Kebab Menu
-                document.getElementById('import-excel-btn-menu').addEventListener('click', showImportModal);
-                document.getElementById('buat-tagihan-semua-btn-menu').addEventListener('click', generateTagihanSemua);
-                document.getElementById('hapus-semua-btn-menu').addEventListener('click', showDeleteSemuaModal);
-                document.getElementById('btn-import-excel').addEventListener('click', importExcel);
-                document.getElementById('btn-konfirmasi-hapus-semua').addEventListener('click', deleteAllCustomers);
-                
-                // --- Event Listener Filter Tabs (Pelanggan) ---
-                const filterNav = document.getElementById('filter-nav');
-                filterNav.addEventListener('click', (e) => {
-                    const target = e.target.closest('.tab-filter');
-                    if (!target) return;
-                    
-                    const filter = target.dataset.filter;
-                    currentFilter = filter;
-                    
-                    // Update UI Tab
-                    filterNav.querySelectorAll('.tab-filter').forEach(tab => {
-                        tab.classList.remove('active');
-                        tab.removeAttribute('aria-current');
-                    });
-                    target.classList.add('active');
-                    target.setAttribute('aria-current', 'page');
-                    
-                    // Render ulang list
-                    renderCustomers(currentFilter);
-                });
-
-                // --- Event Listener Form ---
-                loginForm.addEventListener('submit', handleLoginAttempt);
-                document.getElementById('customerForm').addEventListener('submit', saveCustomer);
-                document.getElementById('fab-tambah-pelanggan').addEventListener('click', () => showCustomerModal());
-                document.getElementById('tambah-pelanggan-empty').addEventListener('click', () => showCustomerModal());
-                document.getElementById('settingsForm').addEventListener('submit', saveSettings);
-                
-                // Payment Modal
-                document.getElementById('btn-bayar-lunas').addEventListener('click', () => handlePayment(true));
-                document.getElementById('btn-bayar-manual').addEventListener('click', () => handlePayment(false));
-
-                // Prorata Modal
-                document.getElementById('tglMulai').addEventListener('change', calculateProrata);
-                document.getElementById('tglAkhir').addEventListener('change', calculateProrata);
-                document.getElementById('hariPeriodik').addEventListener('input', calculateProrata);
-                document.getElementById('btn-buat-prorata').addEventListener('click', handleProrata);
-                
-                // WA Modal
-                document.getElementById('btn-copy-wa').addEventListener('click', copyWaMessage);
-                
-                // Tagihan & Delete Modals
-                document.getElementById('btn-konfirmasi-tagihan').addEventListener('click', generateTagihan);
-                document.getElementById('btn-konfirmasi-hapus').addEventListener('click', deleteCustomer);
-                
-                // --- Event Listener Dinamis (delegasi event) ---
-                customerList.addEventListener('click', (e) => {
-                    const target = e.target.closest('button');
-                    if (!target) return;
-
-                    const id = target.dataset.id;
-                    
-                    if (target.classList.contains('btn-edit')) {
-                        const customer = customersData.find(c => c.id === id);
-                        showCustomerModal(customer);
-                    }
-                    if (target.classList.contains('btn-delete')) {
-                        showDeleteModal(id);
-                    }
-                    if (target.classList.contains('btn-bayar')) {
-                        showPaymentModal(id);
-                    }
-                    if (target.classList.contains('btn-tagih')) {
-                        showTagihanModal(id);
-                    }
-                    if (target.classList.contains('btn-prorata')) {
-                        showProrataModal(id);
-                    }
-                    if (target.classList.contains('btn-wa')) {
-                        showWaModal(id);
+            // --- Event Listener untuk Modals ---
+            
+            // Tombol Batal
+            document.querySelectorAll('.btn-cancel').forEach(btn => {
+                btn.addEventListener('click', () => toggleModal(btn.dataset.modal, false));
+            });
+            
+            // Klik di luar modal (backdrop)
+            document.querySelectorAll('.modal-backdrop').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        toggleModal(modal.id, false);
                     }
                 });
             });
 
-        </script>
-    </body>
-    </html>
+            // --- Event Listener Kebab Menu ---
+            const kebabMenuButton = document.getElementById('kebab-menu-button');
+            const kebabMenuModal = document.getElementById('kebab-menu-modal');
+            kebabMenuButton.addEventListener('click', () => {
+                kebabMenuModal.classList.toggle('hidden');
+            });
+            
+            // Tutup kebab menu jika klik di luar
+            document.addEventListener('click', (e) => {
+                if (!kebabMenuButton.contains(e.target) && !kebabMenuModal.contains(e.target)) {
+                    kebabMenuModal.classList.add('hidden');
+                }
+            });
+
+            // Tombol di dalam Kebab Menu
+            document.getElementById('import-excel-btn-menu').addEventListener('click', showImportModal);
+            document.getElementById('buat-tagihan-semua-btn-menu').addEventListener('click', generateTagihanSemua);
+            document.getElementById('hapus-semua-btn-menu').addEventListener('click', showDeleteSemuaModal);
+            document.getElementById('btn-import-excel').addEventListener('click', importExcel);
+            document.getElementById('btn-konfirmasi-hapus-semua').addEventListener('click', deleteAllCustomers);
+            
+            // --- Event Listener Filter Tabs (Pelanggan) ---
+            const filterNav = document.getElementById('filter-nav');
+            filterNav.addEventListener('click', (e) => {
+                const target = e.target.closest('.tab-filter');
+                if (!target) return;
+                
+                const filter = target.dataset.filter;
+                currentFilter = filter;
+                
+                // Update UI Tab
+                filterNav.querySelectorAll('.tab-filter').forEach(tab => {
+                    tab.classList.remove('text-indigo-600', 'border-indigo-500');
+                    tab.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                    tab.removeAttribute('aria-current');
+                });
+                target.classList.add('text-indigo-600', 'border-indigo-500');
+                target.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                target.setAttribute('aria-current', 'page');
+                
+                // Render ulang list
+                renderCustomers(currentFilter);
+            });
+
+            // --- Event Listener Search Bar ---
+            document.getElementById('search-bar').addEventListener('input', () => {
+                renderCustomers(currentFilter);
+            });
+
+            // --- Event Listener Home Analytic Cards ---
+            document.getElementById('analytic-card-total').addEventListener('click', () => {
+                navigateToTab('pelanggan', 'semua');
+            });
+            document.getElementById('analytic-card-belum-lunas').addEventListener('click', () => {
+                navigateToTab('pelanggan', 'belum-bayar');
+            });
+
+            // --- Event Listener Form ---
+            document.getElementById('customerForm').addEventListener('submit', saveCustomer);
+            document.getElementById('fab-tambah-pelanggan').addEventListener('click', () => showCustomerModal());
+            document.getElementById('tambah-pelanggan-empty').addEventListener('click', () => showCustomerModal());
+            document.getElementById('settingsForm').addEventListener('submit', saveSettings);
+            
+            // Payment Modal
+            document.getElementById('btn-bayar-lunas').addEventListener('click', () => handlePayment(true));
+            document.getElementById('btn-bayar-manual').addEventListener('click', () => handlePayment(false));
+
+            // Prorata Modal
+            document.getElementById('tglMulai').addEventListener('change', calculateProrata);
+            document.getElementById('tglAkhir').addEventListener('change', calculateProrata);
+            document.getElementById('hariPeriodik').addEventListener('input', calculateProrata);
+            document.getElementById('btn-buat-prorata').addEventListener('click', handleProrata);
+            
+            // WA Modal
+            document.getElementById('btn-copy-wa').addEventListener('click', copyWaMessage);
+            
+            // Tagihan & Delete Modals
+            document.getElementById('btn-konfirmasi-tagihan').addEventListener('click', generateTagihan);
+            document.getElementById('btn-konfirmasi-hapus').addEventListener('click', deleteCustomer);
+            
+            // --- Event Listener Dinamis (delegasi event) ---
+            customerList.addEventListener('click', (e) => {
+                const target = e.target.closest('button');
+                if (!target) return;
+
+                const id = target.dataset.id;
+                
+                if (target.classList.contains('btn-edit')) {
+                    const customer = customersData.find(c => c.id === id);
+                    showCustomerModal(customer);
+                }
+                if (target.classList.contains('btn-delete')) {
+                    showDeleteModal(id);
+                }
+                if (target.classList.contains('btn-bayar')) {
+                    showPaymentModal(id);
+                }
+                if (target.classList.contains('btn-tagih')) {
+                    showTagihanModal(id);
+                }
+                if (target.classList.contains('btn-prorata')) {
+                    showProrataModal(id);
+                }
+                if (target.classList.contains('btn-wa')) {
+                    showWaModal(id);
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>
