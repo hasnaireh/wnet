@@ -71,6 +71,50 @@
             animation: shake 0.5s ease-in-out;
         }
     </style>
+
+<!-- macOS Control Center skin (injected) -->
+<style>
+  :root{
+    --bg:#071028;
+    --panel: rgba(255,255,255,0.04);
+    --accent: rgba(99,102,241,0.96);
+    --muted: rgba(255,255,255,0.75);
+    --mac-red: #ff5f57;
+    --mac-yellow: #ffbd2e;
+    --mac-green: #28c840;
+  }
+  body {
+    background: radial-gradient(1200px 400px at 10% 10%, rgba(99,102,241,0.06), transparent),
+                linear-gradient(180deg, #071028 0%, #07132a 70%);
+    color: #e6eef8;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, Roboto, "Helvetica Neue", Arial;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+  }
+  /* Make main panels glassy */
+  .container, .bg-white, .bg-indigo-700 {
+    background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)) !important;
+    border: 1px solid rgba(255,255,255,0.04) !important;
+    box-shadow: 0 10px 30px rgba(2,6,23,0.6) !important;
+    backdrop-filter: blur(10px) saturate(120%) !important;
+  }
+  /* Adjust text colors for dark background */
+  .text-gray-900 { color: #e6eef8 !important; }
+  .text-gray-800 { color: #dbe9ff !important; }
+  .text-gray-500 { color: rgba(230,238,248,0.7) !important; }
+  .bg-white { background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)) !important; }
+  .rounded-lg { border-radius: 12px !important; }
+  /* Footer and nav */
+  nav.fixed.bottom-0 { background: rgba(255,255,255,0.03) !important; border-top: 1px solid rgba(255,255,255,0.04) !important; }
+  /* Make modals more mac-like */
+  .modal-content { border-radius: 14px !important; }
+  /* Buttons accent */
+  .bg-indigo-600 { background: linear-gradient(90deg,var(--accent), rgba(99,102,241,0.7)) !important; }
+  /* small tweaks for readability */
+  input, textarea, select { background: rgba(255,255,255,0.02) !important; color: #e6eef8 !important; border:1px solid rgba(255,255,255,0.04) !important; }
+  .loader { border-top-color: var(--accent) !important; }
+</style>
+
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden flex flex-col">
 
