@@ -50,6 +50,14 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        /* Menyembunyikan halaman/tab */
+        .page {
+            display: none;
+        }
+        /* Menampilkan halaman/tab yang aktif */
+        .page.active {
+            display: block;
+        }
     </style>
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden flex flex-col">
@@ -63,7 +71,7 @@
     <header class="bg-indigo-700 text-white p-4 shadow-md sticky top-0 z-40">
         <div class="container mx-auto max-w-5xl flex justify-between items-center">
             <div>
-                <h1 class="text-xl font-bold">WAHYU Net</h1>
+                <h1 id="app-title-header" class="text-xl font-bold">WAHYU Net</h1>
                 <p id="total-tagihan-header" class="text-sm text-indigo-200">Total Tagihan: Rp 0</p>
             </div>
             <!-- Kebab Menu (Tiga Titik) -->
@@ -107,48 +115,180 @@
 
     <!-- Main Content Area -->
     <main class="flex-1 overflow-y-auto pb-28">
-        <div class="container mx-auto max-w-5xl p-4">
-            
-            <!-- Filter Tabs -->
-            <div class="mb-4">
-                <div class="sm:border-b sm:border-gray-200">
-                    <nav class="flex -mb-px space-x-6" aria-label="Tabs">
-                        <button id="filter-semua" class="flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-indigo-600 border-indigo-500" aria-current="page">
-                            Semua
-                        </button>
-                        <button id="filter-lunas" class="flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-transparent hover:border-gray-300">
-                            Lunas
-                            <span id="count-lunas" class="ml-2 hidden bg-green-100 text-green-600 py-0.5 px-2 rounded-full text-xs font-medium">0</span>
-                        </button>
-                        <button id="filter-belum-lunas" class="flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-transparent hover:border-gray-300">
-                            Belum Lunas
-                            <span id="count-belum-lunas" class="ml-2 hidden bg-red-100 text-red-600 py-0.5 px-2 rounded-full text-xs font-medium">0</span>
-                        </button>
-                    </nav>
-                </div>
-            </div>
 
-            <!-- Customer List -->
-            <div id="customer-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Customer cards will be injected here by JavaScript -->
+        <!-- ======================= -->
+        <!-- Page: Home (Analitik) -->
+        <!-- ======================= -->
+        <div id="page-home" class="page active">
+            <div class="container mx-auto max-w-5xl p-4">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Ringkasan Pembukuan</h2>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Card Total Tagihan -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-indigo-500 rounded-md p-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.768 0-1.536.219-2.121.659L9 15.182M12 6v.01" />
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500 truncate">Total Tagihan Aktif</p>
+                                <p id="analytic-total-tagihan" class="text-2xl font-bold text-gray-900">Rp 0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Total Pelanggan -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500 truncate">Total Pelanggan</p>
+                                <p id="analytic-total-pelanggan" class="text-2xl font-bold text-gray-900">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Lunas -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500 truncate">Pelanggan Lunas</p>
+                                <p id="analytic-lunas" class="text-2xl font-bold text-gray-900">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Belum Lunas -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-red-500 rounded-md p-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500 truncate">Pelanggan Belum Bayar</p>
+                                <p id="analytic-belum-lunas" class="text-2xl font-bold text-gray-900">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
-            
-            <div id="empty-state" class="hidden text-center text-gray-500 mt-16">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="w-24 h-24 mx-auto text-gray-300">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                </svg>
-                <h3 class="mt-2 text-lg font-medium text-gray-700">Tidak ada pelanggan</h3>
-                <p class="mt-1 text-sm text-gray-500">Mulai dengan menambahkan pelanggan baru.</p>
-                <div class="mt-6">
-                    <button type="button" id="tambah-pelanggan-empty" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="-ml-1 mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                        </svg>
-                        Tambah Pelanggan
-                    </button>
+        </div>
+
+        <!-- ======================= -->
+        <!-- Page: Pelanggan -->
+        <!-- ======================= -->
+        <div id="page-pelanggan" class="page">
+            <div class="container mx-auto max-w-5xl p-4">
+                
+                <!-- Filter Tabs -->
+                <div class="mb-4">
+                    <div class="sm:border-b sm:border-gray-200">
+                        <nav id="filter-nav" class="flex -mb-px space-x-4 sm:space-x-6 overflow-x-auto" aria-label="Tabs">
+                            <button data-filter="semua" class="tab-filter flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-indigo-600 border-indigo-500" aria-current="page">
+                                Semua
+                            </button>
+                            <button data-filter="belum-bayar" class="tab-filter flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-transparent hover:border-gray-300">
+                                Belum Bayar
+                                <span id="count-belum-bayar" class="ml-2 hidden bg-red-100 text-red-600 py-0.5 px-2 rounded-full text-xs font-medium">0</span>
+                            </button>
+                            <button data-filter="ada-tunggakan" class="tab-filter flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-transparent hover:border-gray-300">
+                                Ada Tunggakan
+                                <span id="count-ada-tunggakan" class="ml-2 hidden bg-yellow-100 text-yellow-600 py-0.5 px-2 rounded-full text-xs font-medium">0</span>
+                            </button>
+                            <button data-filter="lunas" class="tab-filter flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-transparent hover:border-gray-300">
+                                Lunas
+                                <span id="count-lunas" class="ml-2 hidden bg-green-100 text-green-600 py-0.5 px-2 rounded-full text-xs font-medium">0</span>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+
+                <!-- Customer List -->
+                <div id="customer-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Customer cards will be injected here by JavaScript -->
+                </div>
+                
+                <div id="empty-state" class="hidden text-center text-gray-500 mt-16">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="w-24 h-24 mx-auto text-gray-300">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                    </svg>
+                    <h3 class="mt-2 text-lg font-medium text-gray-700">Tidak ada pelanggan</h3>
+                    <p class="mt-1 text-sm text-gray-500">Mulai dengan menambahkan pelanggan baru.</p>
+                    <div class="mt-6">
+                        <button type="button" id="tambah-pelanggan-empty" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="-ml-1 mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                            Tambah Pelanggan
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
+        
+        <!-- ======================= -->
+        <!-- Page: Laporan (Placeholder) -->
+        <!-- ======================= -->
+        <div id="page-laporan" class="page">
+             <div class="container mx-auto max-w-5xl p-4">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Laporan</h2>
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <p class="text-gray-500">Fitur laporan akan segera hadir.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================= -->
+        <!-- Page: Pengaturan -->
+        <!-- ======================= -->
+        <div id="page-pengaturan" class="page">
+             <div class="container mx-auto max-w-5xl p-4">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Pengaturan</h2>
+                
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <form id="settingsForm">
+                        <div class="space-y-6">
+                            <div>
+                                <label for="namaUsaha" class="block text-sm font-medium text-gray-700">Nama Usaha Anda</label>
+                                <input type="text" id="namaUsaha" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: WAHYU Net">
+                                <p class="mt-1 text-xs text-gray-500">Nama ini akan muncul di header aplikasi dan di template WA.</p>
+                            </div>
+                            
+                            <div>
+                                <label for="templateWa" class="block text-sm font-medium text-gray-700">Template Pesan WhatsApp</label>
+                                <textarea id="templateWa" rows="6" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Gunakan variabel: 
+                                    <code class="bg-gray-200 px-1 py-0.5 rounded text-xs">{nama}</code>, 
+                                    <code class="bg-gray-200 px-1 py-0.5 rounded text-xs">{total_tagihan}</code>, 
+                                    <code class="bg-gray-200 px-1 py-0.5 rounded text-xs">{nama_usaha}</code>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex justify-end mt-6">
+                            <button type="submit" class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                Simpan Pengaturan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- Floating Action Button (FAB) -->
@@ -161,26 +301,28 @@
     <!-- Bottom Navigation Bar -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md shadow-[0_-1px_3px_rgba(0,0,0,0.1)] z-30 border-t border-gray-200">
         <div class="container mx-auto max-w-5xl flex justify-around h-16">
-            <button class="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 px-4">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+            <button data-page="home" class="btn-nav flex flex-col items-center justify-center text-indigo-600 px-4">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                    <path d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 1-1.06 1.06l-1.72-1.72V21a.75.75 0 0 1-.75.75h-5.25a.75.75 0 0 1-.75-.75V15a.75.75 0 0 0-.75-.75h-1.5a.75.75 0 0 0-.75.75v6a.75.75 0 0 1-.75.75H5.25a.75.75 0 0 1-.75-.75V11.875L2.81 13.59a.75.75 0 1 1-1.06-1.06l8.69-8.69Z" />
+                    <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z" />
                 </svg>
                 <span class="text-xs font-medium">Home</span>
             </button>
-            <button class="flex flex-col items-center justify-center text-indigo-600 px-4">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-                    <path d="M4.5 6.375a4.125 4.125 0 1 1 8.25 0 4.125 4.125 0 0 1-8.25 0ZM14.25 8.625a4.125 4.125 0 1 1 8.25 0 4.125 4.125 0 0 1-8.25 0ZM1.5 15.75a4.125 4.125 0 1 1 8.25 0 4.125 4.125 0 0 1-8.25 0ZM12.75 17.25a4.125 4.125 0 1 1 8.25 0 4.125 4.125 0 0 1-8.25 0Z" />
+            <button data-page="pelanggan" class="btn-nav flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 px-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479.5.5 0 0 0 .479-.479V11.75a.5.5 0 0 0-.479-.479M18 18.72a8.966 8.966 0 0 1-2.28 1.95c-.52.34-1.1.606-1.72.83M18 18.72v-7.01c0-.52-.34-1.1-.83-1.72a8.966 8.966 0 0 0-1.95-2.28c-.34-.52-.606-1.1-.83-1.72v-7.01c0-.52-.34-1.1-.83-1.72a8.966 8.966 0 0 0-1.95-2.28c-.34-.52-.606-1.1-.83-1.72V2.72c0-.52-.34-1.1-.83-1.72a8.966 8.966 0 0 0-1.95-2.28C8.966 3.22 8.7 3.48 8.47 4c-1.72.83-3.12 2.23-3.95 3.95C4.18 8.7 4 9.18 4 9.72v7.01c0 .52.34 1.1.83 1.72a8.966 8.966 0 0 0 1.95 2.28c.34.52.606 1.1.83 1.72v7.01c0 .52.34 1.1.83 1.72a8.966 8.966 0 0 0 1.95 2.28c.34.52.606 1.1.83 1.72h7.01c.52 0 1.1-.34 1.72-.83a8.966 8.966 0 0 0 2.28-1.95c.52-.34 1.1-.606 1.72-.83" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 12H4.5m7.5 7.5V12m0-7.5V12m7.5 0V12m0 7.5V12m0-7.5V12m-7.5 0h7.5m-7.5 7.5h7.5m-7.5-15h7.5m-7.5 7.5h7.5" />
                 </svg>
                 <span class="text-xs font-medium">Pelanggan</span>
             </button>
-            <button class="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 px-4">
+            <button data-page="laporan" class="btn-nav flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 px-4">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h15.75c.621 0 1.125.504 1.125 1.125v6.75c0 .621-.504 1.125-1.125 1.125H4.125c-.621 0-1.125-.504-1.125-1.125v-6.75Z" />
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 6.375C3 5.754 3.504 5.25 4.125 5.25h15.75c.621 0 1.125.504 1.125 1.125v6.75c0 .621-.504 1.125-1.125 1.125H4.125c-.621 0-1.125-.504-1.125-1.125v-6.75Z" />
                 </svg>
                 <span class="text-xs font-medium">Laporan</span>
             </button>
-            <button class="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 px-4">
+            <button data-page="pengaturan" class="btn-nav flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 px-4">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12a7.5 7.5 0 0 0 15 0m-15 0a7.5 7.5 0 1 1 15 0m-15 0H3m18 0h-1.5m-15 0a7.5 7.5 0 1 1 15 0m-15 0h.008v.008H3v-.008Zm15 0h.008v.008H18v-.008Zm-7.5 0h.008v.008H10.5v-.008Zm4.5 4.5h.008v.008H15v-.008Zm-9 0h.008v.008H6v-.008Z" />
                 </svg>
@@ -219,7 +361,7 @@
                     </div>
                     <div>
                         <label for="noHp" class="block text-sm font-medium text-gray-700">No. HP</label>
-                        <input type="tel" id="noHp" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <input type="tel" id="noHp" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: 628123456789">
                     </div>
                     <div>
                         <label for="alamat" class="block text-sm font-medium text-gray-700">Alamat</label>
@@ -316,6 +458,31 @@
                         Buat Tagihan Prorata
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Kirim WA -->
+    <div id="waModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
+        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-lg m-4 opacity-0 transform scale-95">
+            <div class="p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Kirim Tagihan WhatsApp</h3>
+                <p class="text-sm text-gray-600 mb-2">Pesan ini akan dikirim ke <span id="waCustomerName" class="font-medium"></span> (<span id="waCustomerPhone" class="font-medium"></span>)</p>
+                <input type="hidden" id="waLink">
+                
+                <textarea id="waMessagePreview" rows="8" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+
+                <div class="flex flex-col sm:flex-row sm:space-x-3 mt-6">
+                    <button type="button" id="btn-copy-wa" class="w-full sm:w-1/2 mb-2 sm:mb-0 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        Copy Pesan
+                    </button>
+                    <a id="btn-kirim-wa" href="#" target="_blank" class="w-full sm:w-1/2 text-center px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        Kirim via WhatsApp
+                    </a>
+                </div>
+                <button type="button" class="btn-cancel w-full mt-3 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="waModal">
+                    Batal
+                </button>
             </div>
         </div>
     </div>
@@ -433,6 +600,7 @@
 
         // =========================================================================
         // PENTING: Salin Konfigurasi Firebase Anda dan tempel di bawah ini
+        // =========================================================================
        const firebaseConfig = {
   apiKey: "AIzaSyAUpWUeKypU53Fdb4okuZ-oVJNuyTK19i8",
   authDomain: "wnet-c4907.firebaseapp.com",
@@ -447,15 +615,23 @@
         let db;
         let auth;
         let customersCollection;
+        let settingsCollection;
+        let settingsDocRef;
         let unsubscribeSnap; // Untuk listener onSnapshot
+        let unsubscribeSettingsSnap; // Listener untuk settings
         let currentFilter = "semua";
         let customersData = []; // Cache data lokal
+        let appSettings = {
+            namaUsaha: "WAHYU Net",
+            templateWa: "Halo {nama}, kami dari {nama_usaha} ingin memberitahukan total tagihan Anda bulan ini adalah {total_tagihan}. Terima kasih."
+        };
 
         // DOM Elements
         const customerList = document.getElementById('customer-list');
         const loadingOverlay = document.getElementById('loading-overlay');
         const emptyState = document.getElementById('empty-state');
         const totalTagihanHeader = document.getElementById('total-tagihan-header');
+        const appTitleHeader = document.getElementById('app-title-header');
 
         // Fungsi inisialisasi aplikasi
         async function initializeAppService() {
@@ -482,11 +658,14 @@
                 }
 
                 // Menggunakan koleksi 'pelanggan' yang sederhana
-                // Ini akan dibagikan di semua perangkat yang login dengan akun Firebase yang sama
                 customersCollection = collection(db, "pelanggan");
+                // Koleksi untuk pengaturan
+                settingsCollection = collection(db, "settings");
+                settingsDocRef = doc(settingsCollection, "appConfig");
 
                 // Mulai mendengarkan perubahan data
                 setupSnapshotListener();
+                setupSettingsListener(); // Dengarkan perubahan settings
 
             } catch (error) {
                 console.error("Error initializing Firebase:", error);
@@ -495,7 +674,7 @@
             }
         }
 
-        // Setup listener real-time (onSnapshot)
+        // Setup listener real-time (onSnapshot) untuk PELANGGAN
         function setupSnapshotListener() {
             if (unsubscribeSnap) {
                 unsubscribeSnap(); // Hentikan listener lama jika ada
@@ -513,6 +692,7 @@
                 renderCustomers(currentFilter);
                 calculateTotalBill();
                 updateFilterCounts();
+                updateAnalytics(); // Update data di Home
                 loadingOverlay.style.display = 'none';
                 
             }, (error) => {
@@ -520,6 +700,32 @@
                 showInfoModal("Error mengambil data real-time.", "error");
                 loadingOverlay.style.display = 'none';
             });
+        }
+        
+        // Setup listener real-time (onSnapshot) untuk PENGATURAN
+        function setupSettingsListener() {
+            if (unsubscribeSettingsSnap) {
+                unsubscribeSettingsSnap();
+            }
+
+            unsubscribeSettingsSnap = onSnapshot(settingsDocRef, (doc) => {
+                if (doc.exists()) {
+                    appSettings = { ...appSettings, ...doc.data() };
+                } else {
+                    // Jika belum ada settings, buat default
+                    setDoc(settingsDocRef, appSettings).catch(e => console.error("Could not create default settings", e));
+                }
+                updateUIForSettings();
+            }, (error) => {
+                console.error("Error listening to settings:", error);
+            });
+        }
+        
+        // Update UI berdasarkan settings
+        function updateUIForSettings() {
+            appTitleHeader.textContent = appSettings.namaUsaha || "Billing App";
+            document.getElementById('namaUsaha').value = appSettings.namaUsaha;
+            document.getElementById('templateWa').value = appSettings.templateWa;
         }
 
         // Fungsi untuk merender daftar pelanggan
@@ -530,8 +736,10 @@
 
             if (filter === "lunas") {
                 filteredCustomers = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0);
-            } else if (filter === "belum-lunas") {
+            } else if (filter === "belum-bayar") {
                 filteredCustomers = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) > 0);
+            } else if (filter === "ada-tunggakan") {
+                filteredCustomers = customersData.filter(c => (c.tunggakan || 0) > 0);
             }
 
             if (filteredCustomers.length === 0) {
@@ -553,7 +761,7 @@
                     <div>
                         <div class="flex justify-between items-start">
                             <h3 class="text-lg font-semibold text-gray-800">${customer.nama}</h3>
-                            <div class="flex space-x-2">
+                            <div class="flex space-x-1">
                                 <button class="btn-edit p-1 text-gray-400 hover:text-indigo-600" data-id="${customer.id}" title="Edit Pelanggan">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
                                         <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
@@ -563,6 +771,18 @@
                                 <button class="btn-prorata p-1 text-gray-400 hover:text-blue-600" data-id="${customer.id}" title="Tagihan Prorata">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
                                         <path fill-rule="evenodd" d="M10 1.75a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Zm0 4.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Zm0 4.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Zm0 4.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                ${!isLunas ? `
+                                <button class="btn-tagih p-1 text-gray-400 hover:text-blue-600" data-id="${customer.id}" title="Buat Tagihan Manual">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                                      <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                ` : ''}
+                                <button class="btn-delete p-1 text-gray-400 hover:text-red-600" data-id="${customer.id}" title="Hapus">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                                        <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 0 0-.53 1.025l.155.433c.365.966.746 1.925 1.15 2.872A8.9 8.9 0 0 0 8 13.5a.75.75 0 0 0 1.5 0c0-1.01.12-1.98.34-2.923.404-.947.785-1.906 1.15-2.872l.155-.433a.75.75 0 0 0-.53-1.025c-.78-.122-1.57-.22-2.365-.298V3.75A2.75 2.75 0 0 0 8.75 1ZM6.082 8.75c-.351-.81-.676-1.583-.976-2.316l-.008-.02-.013-.036a.75.75 0 0 1 1.025-.53l.433.155c.78.28 1.557.534 2.306.756a.75.75 0 0 0 .588 0c.749-.222 1.526-.476 2.306-.756l.433-.155a.75.75 0 0 1 1.025.53l-.013.036-.008.02c-.3.732-.625 1.506-.976 2.316a51.64 51.64 0 0 1-.84 1.953.75.75 0 0 0 .346 1.039l.23.115a.75.75 0 0 1 0 1.29l-.23.115a.75.75 0 0 0-.346 1.039c.27.625.568 1.28.84 1.953.301.732.625 1.506.976 2.316l.008.02.013.036a.75.75 0 0 1-1.025.53l-.433-.155c-.78-.28-1.557-.534-2.306-.756a.75.75 0 0 0-.588 0c-.749.222-1.526-.476-2.306-.756l-.433-.155a.75.75 0 0 1-1.025-.53l.013-.036.008-.02c.3-.732.625-1.506.976-2.316.27-.625.568-1.28.84-1.953a.75.75 0 0 0-.346-1.039l-.23-.115a.75.75 0 0 1 0-1.29l.23-.115a.75.75 0 0 0 .346-1.039c-.27-.625-.568-1.28-.84-1.953Z" clip-rule="evenodd" />
                                     </svg>
                                 </button>
                             </div>
@@ -598,15 +818,10 @@
                             <button class="btn-bayar w-full mr-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" data-id="${customer.id}">
                                 Bayar
                             </button>
-                            <button class="btn-tagih w-full ml-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500" data-id="${customer.id}">
-                                Tagih
+                            <button class="btn-wa w-full ml-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500" data-id="${customer.id}">
+                                Kirim WA
                             </button>
                         `}
-                        <button class="btn-delete ml-3 p-2 text-gray-400 hover:text-red-600" data-id="${customer.id}" title="Hapus">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                                <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 0 0-.53 1.025l.155.433c.365.966.746 1.925 1.15 2.872A8.9 8.9 0 0 0 8 13.5a.75.75 0 0 0 1.5 0c0-1.01.12-1.98.34-2.923.404-.947.785-1.906 1.15-2.872l.155-.433a.75.75 0 0 0-.53-1.025c-.78-.122-1.57-.22-2.365-.298V3.75A2.75 2.75 0 0 0 8.75 1ZM6.082 8.75c-.351-.81-.676-1.583-.976-2.316l-.008-.02-.013-.036a.75.75 0 0 1 1.025-.53l.433.155c.78.28 1.557.534 2.306.756a.75.75 0 0 0 .588 0c.749-.222 1.526-.476 2.306-.756l.433-.155a.75.75 0 0 1 1.025.53l-.013.036-.008.02c-.3.732-.625 1.506-.976 2.316a51.64 51.64 0 0 1-.84 1.953.75.75 0 0 0 .346 1.039l.23.115a.75.75 0 0 1 0 1.29l-.23.115a.75.75 0 0 0-.346 1.039c.27.625.568 1.28.84 1.953.301.732.625 1.506.976 2.316l.008.02.013.036a.75.75 0 0 1-1.025.53l-.433-.155c-.78-.28-1.557-.534-2.306-.756a.75.75 0 0 0-.588 0c-.749.222-1.526-.476-2.306-.756l-.433-.155a.75.75 0 0 1-1.025-.53l.013-.036.008-.02c.3-.732.625-1.506.976-2.316.27-.625.568-1.28.84-1.953a.75.75 0 0 0-.346-1.039l-.23-.115a.75.75 0 0 1 0-1.29l.23-.115a.75.75 0 0 0 .346-1.039c-.27-.625-.568-1.28-.84-1.953Z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
                     </div>
                 `;
                 
@@ -630,20 +845,37 @@
             const total = customersData.reduce((acc, c) => acc + (c.tunggakan || 0) + (c.tagihanBulanIni || 0), 0);
             totalTagihanHeader.textContent = `Total Tagihan: ${formatRupiah(total)}`;
         }
+        
+        // Update data analitik di Halaman Home
+        function updateAnalytics() {
+            const totalPelanggan = customersData.length;
+            const totalTagihanAktif = customersData.reduce((acc, c) => acc + (c.tunggakan || 0) + (c.tagihanBulanIni || 0), 0);
+            const lunasCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0).length;
+            const belumLunasCount = totalPelanggan - lunasCount;
+            
+            document.getElementById('analytic-total-tagihan').textContent = formatRupiah(totalTagihanAktif);
+            document.getElementById('analytic-total-pelanggan').textContent = totalPelanggan;
+            document.getElementById('analytic-lunas').textContent = lunasCount;
+            document.getElementById('analytic-belum-lunas').textContent = belumLunasCount;
+        }
 
         // Update jumlah count di filter tabs
         function updateFilterCounts() {
             const lunasCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0).length;
-            const belumLunasCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) > 0).length;
+            const belumBayarCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) > 0).length;
+            const adaTunggakanCount = customersData.filter(c => (c.tunggakan || 0) > 0).length;
 
             const countLunas = document.getElementById('count-lunas');
-            const countBelumLunas = document.getElementById('count-belum-lunas');
+            const countBelumBayar = document.getElementById('count-belum-bayar');
+            const countAdaTunggakan = document.getElementById('count-ada-tunggakan');
 
             countLunas.textContent = lunasCount;
-            countBelumLunas.textContent = belumLunasCount;
+            countBelumBayar.textContent = belumBayarCount;
+            countAdaTunggakan.textContent = adaTunggakanCount;
 
             countLunas.classList.toggle('hidden', lunasCount === 0);
-            countBelumLunas.classList.toggle('hidden', belumLunasCount === 0);
+            countBelumBayar.classList.toggle('hidden', belumBayarCount === 0);
+            countAdaTunggakan.classList.toggle('hidden', adaTunggakanCount === 0);
         }
 
         // Fungsi toggle modal
@@ -928,6 +1160,58 @@
                 showInfoModal('Gagal membuat tagihan prorata.', 'error');
             }
         }
+        
+        // Tampilkan modal WA
+        function showWaModal(id) {
+            const customer = customersData.find(c => c.id === id);
+            if (!customer) return;
+            
+            let noHp = customer.noHp || '';
+            // Format nomor HP (pastikan depannya 62, bukan 0)
+            if (noHp.startsWith('0')) {
+                noHp = '62' + noHp.substring(1);
+            }
+            if (!noHp.startsWith('62')) {
+                showInfoModal('Nomor HP tidak valid. Harus diawali 0 atau 62.', 'error');
+                return;
+            }
+
+            const totalTagihan = (customer.tunggakan || 0) + (customer.tagihanBulanIni || 0);
+            
+            let message = appSettings.templateWa;
+            message = message.replace(/{nama}/g, customer.nama);
+            message = message.replace(/{total_tagihan}/g, formatRupiah(totalTagihan));
+            message = message.replace(/{nama_usaha}/g, appSettings.namaUsaha);
+            
+            const waLink = `https://wa.me/${noHp}?text=${encodeURIComponent(message)}`;
+            
+            document.getElementById('waCustomerName').textContent = customer.nama;
+            document.getElementById('waCustomerPhone').textContent = customer.noHp;
+            document.getElementById('waMessagePreview').value = message;
+            document.getElementById('btn-kirim-wa').href = waLink;
+            
+            toggleModal('waModal', true);
+        }
+        
+        // Copy pesan WA ke clipboard
+        function copyWaMessage() {
+            const message = document.getElementById('waMessagePreview').value;
+            
+            // Trik untuk menyalin teks
+            const textarea = document.createElement('textarea');
+            textarea.value = message;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showInfoModal('Pesan berhasil disalin!');
+            } catch (err) {
+                console.error('Gagal menyalin pesan: ', err);
+                showInfoModal('Gagal menyalin pesan.', 'error');
+            }
+            document.body.removeChild(textarea);
+            toggleModal('waModal', false);
+        }
 
         // Tampilkan modal hapus
         function showDeleteModal(id) {
@@ -1107,6 +1391,26 @@
                 loadingOverlay.style.display = 'none';
             }
         }
+        
+        // Simpan Pengaturan
+        async function saveSettings(event) {
+            event.preventDefault();
+            const namaUsaha = document.getElementById('namaUsaha').value;
+            const templateWa = document.getElementById('templateWa').value;
+            
+            const newSettings = {
+                namaUsaha: namaUsaha,
+                templateWa: templateWa
+            };
+            
+            try {
+                await setDoc(settingsDocRef, newSettings, { merge: true });
+                showInfoModal('Pengaturan berhasil disimpan!');
+            } catch (error) {
+                console.error("Error saving settings:", error);
+                showInfoModal('Gagal menyimpan pengaturan.', 'error');
+            }
+        }
 
 
         // =============================================
@@ -1114,6 +1418,45 @@
         // =============================================
         document.addEventListener('DOMContentLoaded', () => {
             initializeAppService();
+
+            // --- Event Listener Navigasi Tab Bawah ---
+            const pages = document.querySelectorAll('.page');
+            const navButtons = document.querySelectorAll('.btn-nav');
+            
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const pageId = button.dataset.page;
+                    
+                    // Sembunyikan semua halaman
+                    pages.forEach(page => page.classList.remove('active'));
+                    // Tampilkan halaman yang diklik
+                    document.getElementById(`page-${pageId}`).classList.add('active');
+                    
+                    // Update status aktif tombol nav
+                    navButtons.forEach(btn => {
+                        btn.classList.add('text-gray-500', 'hover:text-indigo-600');
+                        btn.classList.remove('text-indigo-600');
+                        // Ganti ikon ke outline
+                        btn.querySelector('svg').innerHTML = btn.querySelector('svg').innerHTML.replace('fill="currentColor"', 'fill="none" stroke-width="1.5" stroke="currentColor"');
+                    });
+                    
+                    button.classList.add('text-indigo-600');
+                    button.classList.remove('text-gray-500', 'hover:text-indigo-600');
+                    // Ganti ikon ke solid
+                    button.querySelector('svg').innerHTML = button.querySelector('svg').innerHTML.replace('fill="none" stroke-width="1.5" stroke="currentColor"', 'fill="currentColor"');
+                    
+                    // Perbarui analitik jika pindah ke Home
+                    if(pageId === 'home') {
+                        updateAnalytics();
+                    }
+                    
+                    // Tampilkan FAB hanya di halaman pelanggan
+                    document.getElementById('fab-tambah-pelanggan').classList.toggle('hidden', pageId !== 'pelanggan');
+                });
+            });
+            // Sembunyikan FAB di awal (karena Home yang aktif)
+            document.getElementById('fab-tambah-pelanggan').classList.add('hidden');
+
 
             // --- Event Listener untuk Modals ---
             
@@ -1152,38 +1495,34 @@
             document.getElementById('btn-import-excel').addEventListener('click', importExcel);
             document.getElementById('btn-konfirmasi-hapus-semua').addEventListener('click', deleteAllCustomers);
             
-            // --- Event Listener Filter Tabs ---
-            const filterTabs = {
-                'filter-semua': document.getElementById('filter-semua'),
-                'filter-lunas': document.getElementById('filter-lunas'),
-                'filter-belum-lunas': document.getElementById('filter-belum-lunas')
-            };
-
-            const setActiveTab = (filter) => {
+            // --- Event Listener Filter Tabs (Pelanggan) ---
+            const filterNav = document.getElementById('filter-nav');
+            filterNav.addEventListener('click', (e) => {
+                const target = e.target.closest('.tab-filter');
+                if (!target) return;
+                
+                const filter = target.dataset.filter;
                 currentFilter = filter;
-                Object.keys(filterTabs).forEach(key => {
-                    const tab = filterTabs[key];
-                    if (key.endsWith(filter)) {
-                        tab.classList.add('text-indigo-600', 'border-indigo-500');
-                        tab.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
-                        tab.setAttribute('aria-current', 'page');
-                    } else {
-                        tab.classList.remove('text-indigo-600', 'border-indigo-500');
-                        tab.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
-                        tab.removeAttribute('aria-current');
-                    }
+                
+                // Update UI Tab
+                filterNav.querySelectorAll('.tab-filter').forEach(tab => {
+                    tab.classList.remove('text-indigo-600', 'border-indigo-500');
+                    tab.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                    tab.removeAttribute('aria-current');
                 });
+                target.classList.add('text-indigo-600', 'border-indigo-500');
+                target.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                target.setAttribute('aria-current', 'page');
+                
+                // Render ulang list
                 renderCustomers(currentFilter);
-            };
-
-            filterTabs['filter-semua'].addEventListener('click', () => setActiveTab('semua'));
-            filterTabs['filter-lunas'].addEventListener('click', () => setActiveTab('lunas'));
-            filterTabs['filter-belum-lunas'].addEventListener('click', () => setActiveTab('belum-lunas'));
+            });
 
             // --- Event Listener Form ---
             document.getElementById('customerForm').addEventListener('submit', saveCustomer);
             document.getElementById('fab-tambah-pelanggan').addEventListener('click', () => showCustomerModal());
             document.getElementById('tambah-pelanggan-empty').addEventListener('click', () => showCustomerModal());
+            document.getElementById('settingsForm').addEventListener('submit', saveSettings);
             
             // Payment Modal
             document.getElementById('btn-bayar-lunas').addEventListener('click', () => handlePayment(true));
@@ -1194,6 +1533,9 @@
             document.getElementById('tglAkhir').addEventListener('change', calculateProrata);
             document.getElementById('hariPeriodik').addEventListener('input', calculateProrata);
             document.getElementById('btn-buat-prorata').addEventListener('click', handleProrata);
+            
+            // WA Modal
+            document.getElementById('btn-copy-wa').addEventListener('click', copyWaMessage);
             
             // Tagihan & Delete Modals
             document.getElementById('btn-konfirmasi-tagihan').addEventListener('click', generateTagihan);
@@ -1221,6 +1563,9 @@
                 }
                 if (target.classList.contains('btn-prorata')) {
                     showProrataModal(id);
+                }
+                if (target.classList.contains('btn-wa')) {
+                    showWaModal(id);
                 }
             });
         });
