@@ -2385,6 +2385,31 @@
     // EVENT LISTENERS
     // =============================================
     document.addEventListener('DOMContentLoaded', () => {
+	
+	// Tambahkan fungsi ini di dalam DOMContentLoaded
+function adjustLayoutForMobile() {
+    const header = document.querySelector('.glass-header');
+    const main = document.querySelector('main');
+    
+    if (header && main) {
+        const headerHeight = header.offsetHeight;
+        main.style.paddingTop = headerHeight + 20 + 'px';
+    }
+}
+
+// Panggil fungsi saat load dan resize
+window.addEventListener('load', adjustLayoutForMobile);
+window.addEventListener('resize', adjustLayoutForMobile);
+
+// Juga panggil setelah navigasi
+document.querySelectorAll('.btn-nav').forEach(button => {
+    button.addEventListener('click', () => {
+        setTimeout(adjustLayoutForMobile, 100);
+    });
+});
+	
+	
+	
         // --- Logika Kunci Sandi ---
         checkURLReset();
         initializeLockScreen();
