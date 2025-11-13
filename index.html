@@ -10,52 +10,174 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Library SHA-256 untuk hashing password -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.9.0/sha256.min.js"></script>
+    
     <style>
-        /* Menggunakan font Inter yang modern */
+        /* Font family yang mirip macOS */
         body {
-            font-family: 'Inter', sans-serif;
-            overscroll-behavior-y: none; /* Mencegah 'bounce' di iOS */
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            overscroll-behavior-y: none;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
+        
+        /* Tema Light (Default) */
+        body {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e6eeff 100%);
+            color: #1e293b;
+        }
+        
+        /* Tema Dark */
+        body.dark {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f1f5f9;
+        }
+        
+        /* Glassmorphism effect untuk card dan panel */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        body.dark .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Header dengan efek kaca */
+        .glass-header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        body.dark .glass-header {
+            background: rgba(30, 41, 59, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Bottom navigation dengan efek kaca */
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        body.dark .glass-nav {
+            background: rgba(30, 41, 59, 0.8);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Button dengan gaya macOS */
+        .macos-button {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+        
+        .macos-button:hover {
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        body.dark .macos-button {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        body.dark .macos-button:hover {
+            background: rgba(30, 41, 59, 0.9);
+        }
+        
+        /* Primary button dengan warna macOS blue */
+        .macos-primary {
+            background: linear-gradient(135deg, #007AFF 0%, #0056CC 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+        }
+        
+        .macos-primary:hover {
+            background: linear-gradient(135deg, #0056CC 0%, #0040A0 100%);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+        }
+        
+        /* Input fields dengan gaya macOS */
+        .macos-input {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(5px);
+            transition: all 0.2s ease;
+        }
+        
+        .macos-input:focus {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: #007AFF;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+        }
+        
+        body.dark .macos-input {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #f1f5f9;
+        }
+        
+        body.dark .macos-input:focus {
+            background: rgba(30, 41, 59, 0.9);
+            border-color: #007AFF;
+        }
+        
         /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
         }
+        
         ::-webkit-scrollbar-thumb {
-            background-color: #4f46e5; /* Indigo */
+            background-color: #007AFF;
             border-radius: 10px;
         }
+        
+        body.dark ::-webkit-scrollbar-thumb {
+            background-color: #60A5FA;
+        }
+        
         /* Efek blur untuk modal backdrop */
         .modal-backdrop {
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
+        
         /* Transisi untuk modal */
         .modal-content {
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+        
         /* Garis batas status */
         .status-border-lunas {
-            border-left: 4px solid #10B981; /* Green-500 */
+            border-left: 4px solid #10B981;
         }
+        
         .status-border-tunggak {
-            border-left: 4px solid #EF4444; /* Red-500 */
+            border-left: 4px solid #EF4444;
         }
-        /* Mencegah highlight saat di-tap di mobile */
-        button, a {
-            -webkit-tap-highlight-color: transparent;
-        }
+        
         /* Loading spinner */
         .loader {
-            border-top-color: #4f46e5;
+            border-top-color: #007AFF;
             animation: spin 1s linear infinite;
         }
+        
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
         /* Menyembunyikan halaman/tab */
         .page {
             display: none;
         }
+        
         /* Menampilkan halaman/tab yang aktif */
         .page.active {
             display: block;
@@ -67,151 +189,283 @@
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
             20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
+        
         .shake {
             animation: shake 0.5s ease-in-out;
         }
-    
-/* --- Dark Mode Support --- */
-body.dark {
-  background: radial-gradient(1200px 400px at 10% 10%, rgba(15,23,42,0.9), rgba(2,6,23,1));
-  color: #f1f5f9;
-}
-body.dark .cc-panel {
-  background: rgba(30,41,59,0.7);
-  border-color: rgba(255,255,255,0.08);
-}
-body.dark .card, body.dark .search {
-  background: rgba(30,41,59,0.6);
-  border-color: rgba(255,255,255,0.08);
-}
-body.dark .status-small { color: rgba(255,255,255,0.7); }
-body.dark input, body.dark select {
-  background: rgba(255,255,255,0.05) !important;
-  color: #e2e8f0 !important;
-}
-body.dark .icon-btn {
-  background: rgba(255,255,255,0.05);
-  border-color: rgba(255,255,255,0.1);
-}
+        
+        /* Floating Dark Mode Toggle */
+        #darkModeToggle {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 9999;
+        }
+        
+        #darkModeToggle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        body.dark #darkModeToggle {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        #darkModeToggle svg {
+            width: 24px;
+            height: 24px;
+            transition: all 0.3s ease;
+        }
+        
+        #darkModeToggle .sun {
+            color: #F59E0B;
+        }
+        
+        #darkModeToggle .moon {
+            color: #CBD5E1;
+        }
+        
+        /* Hide one icon based on theme */
+        body #darkModeToggle .moon,
+        body.dark #darkModeToggle .sun {
+            display: none;
+        }
+        
+        body #darkModeToggle .sun,
+        body.dark #darkModeToggle .moon {
+            display: block;
+        }
+        
+        /* Kebab menu dengan gaya macOS */
+        .macos-menu {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+        }
+        
+        body.dark .macos-menu {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Card hover effect */
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        body.dark .card-hover:hover {
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* macOS style modal */
+        .macos-modal {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            border-radius: 14px;
+        }
+        
+        body.dark .macos-modal {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Tab dengan gaya macOS */
+        .macos-tab {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+        
+        .macos-tab.active {
+            border-bottom-color: #007AFF;
+            color: #007AFF;
+        }
+        
+        body.dark .macos-tab.active {
+            color: #60A5FA;
+            border-bottom-color: #60A5FA;
+        }
+        
+        /* Status indicators */
+        .status-lunas {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10B981;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-tunggak {
+            background: rgba(239, 68, 68, 0.1);
+            color: #EF4444;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
 
+        /* ======================= */
+        /* PERBAIKAN UNTUK DARK MODE */
+        /* ======================= */
 
-/* --- Floating Dark Mode Toggle Button --- */
-#darkModeFloating {
-  position: fixed;
-  bottom: 28px;
-  right: 28px;
-  width: 70px;
-  height: 70px;
-  border-radius: 9999px;
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(12px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.12);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.4s ease;
-  z-index: 9999;
-  opacity: 0;
-  transform: translateY(30px);
-  animation: fadeUp 0.6s ease forwards 0.3s;
-}
-#darkModeFloating:hover {
-  box-shadow: 0 0 12px rgba(99,102,241,0.8);
-  background: rgba(99,102,241,0.15);
-}
-#darkModeFloating svg {
-  width: 30px;
-  height: 30px;
-  color: #e5e7eb;
-  transition: transform 0.3s ease, opacity 0.3s ease;
-}
-#darkModeFloating.active svg.sun {
-  opacity: 0;
-  transform: scale(0.6);
-}
-#darkModeFloating.active svg.moon {
-  opacity: 1;
-  transform: scale(1);
-}
-#darkModeFloating svg.moon {
-  position: absolute;
-  opacity: 0;
-  transform: scale(0.6);
-}
-@media (max-width:768px){
-  #darkModeFloating {
-    width: 50px;
-    height: 50px;
-    bottom: 18px;
-    right: 18px;
-  }
-  #darkModeFloating svg {
-    width: 22px;
-    height: 22px;
-  }
-}
-@keyframes fadeUp {
-  from { opacity:0; transform: translateY(30px); }
-  to { opacity:1; transform: translateY(0); }
-}
+        /* Text colors untuk dark mode */
+        body.dark .text-gray-800,
+        body.dark .text-gray-900,
+        body.dark .text-gray-700 {
+            color: #f1f5f9 !important;
+        }
 
-</style>
+        body.dark .text-gray-600,
+        body.dark .text-gray-500 {
+            color: #cbd5e1 !important;
+        }
 
-<!-- macOS Control Center skin (injected) -->
-<style>
-  :root{
-    --bg:#071028;
-    --panel: rgba(255,255,255,0.04);
-    --accent: rgba(99,102,241,0.96);
-    --muted: rgba(255,255,255,0.75);
-    --mac-red: #ff5f57;
-    --mac-yellow: #ffbd2e;
-    --mac-green: #28c840;
-  }
-  body {
-    background: radial-gradient(1200px 400px at 10% 10%, rgba(99,102,241,0.06), transparent),
-                linear-gradient(180deg, #071028 0%, #07132a 70%);
-    color: #e6eef8;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, Roboto, "Helvetica Neue", Arial;
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
-  }
-  /* Make main panels glassy */
-  .container, .bg-white, .bg-indigo-700 {
-    background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)) !important;
-    border: 1px solid rgba(255,255,255,0.04) !important;
-    box-shadow: 0 10px 30px rgba(2,6,23,0.6) !important;
-    backdrop-filter: blur(10px) saturate(120%) !important;
-  }
-  /* Adjust text colors for dark background */
-  .text-gray-900 { color: #e6eef8 !important; }
-  .text-gray-800 { color: #dbe9ff !important; }
-  .text-gray-500 { color: rgba(230,238,248,0.7) !important; }
-  .bg-white { background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)) !important; }
-  .rounded-lg { border-radius: 12px !important; }
-  /* Footer and nav */
-  nav.fixed.bottom-0 { background: rgba(255,255,255,0.03) !important; border-top: 1px solid rgba(255,255,255,0.04) !important; }
-  /* Make modals more mac-like */
-  .modal-content { border-radius: 14px !important; }
-  /* Buttons accent */
-  .bg-indigo-600 { background: linear-gradient(90deg,var(--accent), rgba(99,102,241,0.7)) !important; }
-  /* small tweaks for readability */
-  input, textarea, select { background: rgba(255,255,255,0.02) !important; color: #e6eef8 !important; border:1px solid rgba(255,255,255,0.04) !important; }
-  .loader { border-top-color: var(--accent) !important; }
-</style>
+        /* Background colors untuk input dan form di dark mode */
+        body.dark .macos-input {
+            background: rgba(30, 41, 59, 0.8) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #f1f5f9 !important;
+        }
 
+        body.dark .macos-input::placeholder {
+            color: #94a3b8 !important;
+        }
+
+        /* Modal text colors di dark mode */
+        body.dark .macos-modal,
+        body.dark .macos-modal h3,
+        body.dark .macos-modal p,
+        body.dark .macos-modal label,
+        body.dark .macos-modal span {
+            color: #f1f5f9 !important;
+        }
+
+        /* Kebab menu text di dark mode */
+        body.dark .macos-menu,
+        body.dark .macos-menu li button {
+            color: #f1f5f9 !important;
+        }
+
+        body.dark .macos-menu li button:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* Card content di dark mode */
+        body.dark .glass-card h3,
+        body.dark .glass-card p,
+        body.dark .glass-card span {
+            color: #f1f5f9 !important;
+        }
+
+        /* Status badges di dark mode */
+        body.dark .status-lunas {
+            background: rgba(16, 185, 129, 0.2) !important;
+            color: #10b981 !important;
+        }
+
+        body.dark .status-tunggak {
+            background: rgba(239, 68, 68, 0.2) !important;
+            color: #ef4444 !important;
+        }
+
+        /* Button text di dark mode */
+        body.dark .macos-button {
+            color: #f1f5f9 !important;
+        }
+
+        /* Header di dark mode */
+        body.dark .glass-header,
+        body.dark .glass-header h1,
+        body.dark .glass-header p {
+            color: #f1f5f9 !important;
+        }
+
+        /* Navigation di dark mode */
+        body.dark .glass-nav,
+        body.dark .btn-nav {
+            color: #cbd5e1 !important;
+        }
+
+        body.dark .btn-nav.text-blue-500 {
+            color: #60a5fa !important;
+        }
+
+        /* Search icon di dark mode */
+        body.dark .text-gray-400 {
+            color: #64748b !important;
+        }
+
+        /* Code blocks di dark mode */
+        body.dark code {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: #e2e8f0 !important;
+        }
+
+        /* Empty state di dark mode */
+        body.dark #empty-state h3,
+        body.dark #empty-state p {
+            color: #cbd5e1 !important;
+        }
+
+        /* Loading spinner di dark mode */
+        body.dark .loader {
+            border-top-color: #60a5fa !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* Payment modal amounts di dark mode */
+        body.dark #paymentTotal {
+            color: #60a5fa !important;
+        }
+
+        /* Prorata result di dark mode */
+        body.dark #prorataResult {
+            background: rgba(59, 130, 246, 0.1) !important;
+        }
+
+        body.dark #prorataResult p {
+            color: #e2e8f0 !important;
+        }
+
+        body.dark #prorataTotal {
+            color: #60a5fa !important;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 h-screen overflow-hidden flex flex-col">
-
+<body class="h-screen overflow-hidden flex flex-col">
     <!-- ======================= -->
     <!-- Layar Kunci Password    -->
     <!-- ======================= -->
     <div id="lockScreen" class="fixed inset-0 bg-gray-900 z-[100] flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-8">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-16 h-16 mx-auto text-indigo-600">
-                <path fill-rule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3A5.25 5.25 0 0 0 12 1.5Zm-3.75 5.25v3h7.5v-3a3.75 3.75 0 0 0-7.5 0Z" clip-rule="evenodd" />
+        <div class="macos-modal w-full max-w-sm p-8">
+            <!-- macOS Security Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 mx-auto text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
             <h2 class="text-2xl font-bold text-center text-gray-800 mt-4">Akses Dibatasi</h2>
             <p class="text-center text-gray-500 text-sm mt-1">Masukkan kata sandi untuk melanjutkan.</p>
@@ -219,10 +473,10 @@ body.dark .icon-btn {
             <form id="lockForm" class="mt-6">
                 <div>
                     <label for="password" class="sr-only">Kata Sandi</label>
-                    <input type="password" id="password" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-center" placeholder="••••••••" required>
+                    <input type="password" id="password" class="macos-input mt-1 block w-full px-4 py-3 rounded-lg text-center" placeholder="••••••••" required>
                 </div>
                 <p id="passwordError" class="text-red-500 text-sm text-center mt-2 hidden">Kata sandi salah.</p>
-                <button type="submit" class="w-full mt-4 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                <button type="submit" class="macos-primary w-full mt-4 px-6 py-3 rounded-lg font-medium">
                     Masuk
                 </button>
             </form>
@@ -239,44 +493,55 @@ body.dark .icon-btn {
         </div>
 
         <!-- Header Bar -->
-        <header class="bg-indigo-700 text-white p-4 shadow-md sticky top-0 z-40">
+        <header class="glass-header text-gray-800 p-4 sticky top-0 z-40">
             <div class="container mx-auto max-w-5xl flex justify-between items-center">
                 <div>
                     <h1 id="app-title-header" class="text-xl font-bold">WAHYU Net</h1>
-                    <p id="total-tagihan-header" class="text-sm text-indigo-200">Total Tagihan: Rp 0</p>
+                    <p id="total-tagihan-header" class="text-sm text-gray-600">Total Tagihan: Rp 0</p>
                 </div>
                 <!-- Kebab Menu (Tiga Titik) -->
-                <button id="kebab-menu-button" class="p-2 rounded-full hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 0 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 0 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 0 1 0-1.5.75.75 0 0 1 0 1.5Z" />
+                <button id="kebab-menu-button" class="p-2 rounded-full hover:bg-gray-200 focus:outline-none">
+                    <!-- macOS More Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="1"/>
+                        <circle cx="12" cy="5" r="1"/>
+                        <circle cx="12" cy="19" r="1"/>
                     </svg>
                 </button>
             </div>
         </header>
 
         <!-- Kebab Menu Modal (Hidden) -->
-        <div id="kebab-menu-modal" class="hidden fixed top-16 right-4 bg-white shadow-xl rounded-lg z-50 w-64 border border-gray-200">
+        <div id="kebab-menu-modal" class="hidden fixed top-16 right-4 macos-menu z-50 w-64">
             <ul class="py-2">
                 <li>
-                    <button id="import-excel-btn-menu" class="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-3 text-green-600">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.165 15.356L8.25 19.5m0 0-.335.335a.75.75 0 0 1-1.06 0l-1.5-1.5a.75.75 0 0 1 0-1.06l.335-.335m0 0 1.5 1.5 1.5-1.5m0 0 .335-.335a.75.75 0 0 1 1.06 0l1.5 1.5a.75.75 0 0 1 0 1.06l-.335.335m0 0c-.22.22-.38.484-.487.75-.106.266-.163.546-.163.84 0 .4.098.784.28 1.12C8.18 21.488 8.683 22 9.25 22h5.5c.567 0 1.07-.512 1.358-.88.183-.336.28-.72.28-1.12 0-.294-.057-.574-.163-.84-.106-.266-.267-.53-.487-.75m-6 3.75h6m-5.75-15h5.75" />
+                    <button id="import-excel-btn-menu" class="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg mx-2 my-1">
+                        <!-- macOS Import Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-3 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
                         Import Excel
                     </button>
                 </li>
                 <li>
-                    <button id="buat-tagihan-semua-btn-menu" class="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-3 text-blue-600">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    <button id="buat-tagihan-semua-btn-menu" class="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg mx-2 my-1">
+                        <!-- macOS Clock Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-3 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
                         </svg>
                         Buat Tagihan (Semua)
                     </button>
                 </li>
                 <li>
-                    <button id="hapus-semua-btn-menu" class="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-3 text-red-600">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12.578 0a48.108 48.108 0 0 1 3.478-.397m12.578 0h.225a2.25 2.25 0 0 1 2.25 2.25v.225c0 .12-.01.237-.026.351m-11.753 0l-3.111 3.112a2.25 2.25 0 0 0-2.244 2.077L4.772 19.673m0-13.883H4.498a2.25 2.25 0 0 0-2.25 2.25v.225c0 .12.01.237.026.351m11.753 0c-.34.052-.68.107-1.022.166" />
+                    <button id="hapus-semua-btn-menu" class="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg mx-2 my-1">
+                        <!-- macOS Trash Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-3 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                         </svg>
                         Hapus Semua Data
                     </button>
@@ -286,7 +551,6 @@ body.dark .icon-btn {
 
         <!-- Main Content Area -->
         <main class="flex-1 overflow-y-auto pb-28">
-
             <!-- ======================= -->
             <!-- Page: Home (Analitik) -->
             <!-- ======================= -->
@@ -296,11 +560,13 @@ body.dark .icon-btn {
                     
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <!-- Card Total Tagihan -->
-                        <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="glass-card p-6 rounded-xl card-hover">
                             <div class="flex items-center">
-                                <div class="flex-shrink-0 bg-indigo-500 rounded-md p-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.768 0-1.536.219-2.121.659L9 15.182M12 6v.01" />
+                                <div class="flex-shrink-0 bg-blue-500 rounded-xl p-3">
+                                    <!-- macOS Money Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="12" y1="1" x2="12" y2="23"/>
+                                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                                     </svg>
                                 </div>
                                 <div class="ml-4">
@@ -311,11 +577,13 @@ body.dark .icon-btn {
                         </div>
 
                         <!-- Card Total Pelanggan -->
-                        <div id="analytic-card-total" class="bg-white p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition">
+                        <div id="analytic-card-total" class="glass-card p-6 rounded-xl card-hover cursor-pointer">
                             <div class="flex items-center">
-                                <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                                <div class="flex-shrink-0 bg-blue-500 rounded-xl p-3">
+                                    <!-- macOS Person Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
                                     </svg>
                                 </div>
                                 <div class="ml-4">
@@ -326,11 +594,13 @@ body.dark .icon-btn {
                         </div>
 
                         <!-- Card Lunas -->
-                        <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="glass-card p-6 rounded-xl card-hover">
                             <div class="flex items-center">
-                                <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                <div class="flex-shrink-0 bg-green-500 rounded-xl p-3">
+                                    <!-- macOS Checkmark Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                        <polyline points="22 4 12 14.01 9 11.01"/>
                                     </svg>
                                 </div>
                                 <div class="ml-4">
@@ -341,11 +611,14 @@ body.dark .icon-btn {
                         </div>
 
                         <!-- Card Belum Lunas -->
-                        <div id="analytic-card-belum-lunas" class="bg-white p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition">
+                        <div id="analytic-card-belum-lunas" class="glass-card p-6 rounded-xl card-hover cursor-pointer">
                             <div class="flex items-center">
-                                <div class="flex-shrink-0 bg-red-500 rounded-md p-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                                <div class="flex-shrink-0 bg-red-500 rounded-xl p-3">
+                                    <!-- macOS Warning Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                                        <line x1="12" y1="9" x2="12" y2="13"/>
+                                        <line x1="12" y1="17" x2="12.01" y2="17"/>
                                     </svg>
                                 </div>
                                 <div class="ml-4">
@@ -355,7 +628,6 @@ body.dark .icon-btn {
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
 
@@ -364,23 +636,22 @@ body.dark .icon-btn {
             <!-- ======================= -->
             <div id="page-pelanggan" class="page">
                 <div class="container mx-auto max-w-5xl p-4">
-                    
                     <!-- Filter Tabs -->
                     <div class="mb-4">
                         <div class="sm:border-b sm:border-gray-200">
                             <nav id="filter-nav" class="flex -mb-px space-x-4 sm:space-x-6 overflow-x-auto" aria-label="Tabs">
-                                <button data-filter="semua" class="tab-filter flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-indigo-600 border-indigo-500" aria-current="page">
+                                <button data-filter="semua" class="macos-tab flex items-center whitespace-nowrap py-3 px-1 font-medium text-sm active" aria-current="page">
                                     Semua
                                 </button>
-                                <button data-filter="belum-bayar" class="tab-filter flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-transparent hover:border-gray-300">
+                                <button data-filter="belum-bayar" class="macos-tab flex items-center whitespace-nowrap py-3 px-1 font-medium text-sm text-gray-500 hover:text-gray-700">
                                     Belum Bayar
                                     <span id="count-belum-bayar" class="ml-2 hidden bg-red-100 text-red-600 py-0.5 px-2 rounded-full text-xs font-medium">0</span>
                                 </button>
-                                <button data-filter="ada-tunggakan" class="tab-filter flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-transparent hover:border-gray-300">
+                                <button data-filter="ada-tunggakan" class="macos-tab flex items-center whitespace-nowrap py-3 px-1 font-medium text-sm text-gray-500 hover:text-gray-700">
                                     Ada Tunggakan
                                     <span id="count-ada-tunggakan" class="ml-2 hidden bg-yellow-100 text-yellow-600 py-0.5 px-2 rounded-full text-xs font-medium">0</span>
                                 </button>
-                                <button data-filter="lunas" class="tab-filter flex items-center whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 border-transparent hover:border-gray-300">
+                                <button data-filter="lunas" class="macos-tab flex items-center whitespace-nowrap py-3 px-1 font-medium text-sm text-gray-500 hover:text-gray-700">
                                     Lunas
                                     <span id="count-lunas" class="ml-2 hidden bg-green-100 text-green-600 py-0.5 px-2 rounded-full text-xs font-medium">0</span>
                                 </button>
@@ -390,10 +661,12 @@ body.dark .icon-btn {
 
                     <!-- Search Bar -->
                     <div class="mb-4 relative">
-                        <input type="text" id="search-bar" placeholder="Cari nama pelanggan..." class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="text" id="search-bar" placeholder="Cari nama pelanggan..." class="macos-input w-full pl-10 pr-4 py-3 rounded-lg">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd" />
+                            <!-- macOS Search Icon -->
+                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                             </svg>
                         </div>
                     </div>
@@ -404,15 +677,19 @@ body.dark .icon-btn {
                     </div>
                     
                     <div id="empty-state" class="hidden text-center text-gray-500 mt-16">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="w-24 h-24 mx-auto text-gray-300">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                        <!-- macOS Person Icon (Empty State) -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-24 h-24 mx-auto text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
                         </svg>
                         <h3 class="mt-2 text-lg font-medium text-gray-700">Tidak ada pelanggan</h3>
                         <p class="mt-1 text-sm text-gray-500">Mulai dengan menambahkan pelanggan baru.</p>
                         <div class="mt-6">
-                            <button type="button" id="tambah-pelanggan-empty" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="-ml-1 mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                            <button type="button" id="tambah-pelanggan-empty" class="macos-primary inline-flex items-center px-4 py-2 shadow-sm text-sm font-medium rounded-lg">
+                                <!-- macOS Plus Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="-ml-1 mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
                                 </svg>
                                 Tambah Pelanggan
                             </button>
@@ -427,7 +704,7 @@ body.dark .icon-btn {
             <div id="page-laporan" class="page">
                 <div class="container mx-auto max-w-5xl p-4">
                     <h2 class="text-2xl font-semibold text-gray-800 mb-4">Laporan</h2>
-                    <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <div class="glass-card p-6 rounded-xl text-center">
                         <p class="text-gray-500">Fitur laporan akan segera hadir.</p>
                     </div>
                 </div>
@@ -440,18 +717,18 @@ body.dark .icon-btn {
                 <div class="container mx-auto max-w-5xl p-4">
                     <h2 class="text-2xl font-semibold text-gray-800 mb-4">Pengaturan</h2>
                     
-                    <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="glass-card p-6 rounded-xl">
                         <form id="settingsForm">
                             <div class="space-y-6">
                                 <div>
                                     <label for="namaUsaha" class="block text-sm font-medium text-gray-700">Nama Usaha Anda</label>
-                                    <input type="text" id="namaUsaha" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: WAHYU Net">
+                                    <input type="text" id="namaUsaha" class="macos-input mt-1 block w-full px-4 py-3 rounded-lg" placeholder="Contoh: WAHYU Net">
                                     <p class="mt-1 text-xs text-gray-500">Nama ini akan muncul di header aplikasi dan di template WA.</p>
                                 </div>
                                 
                                 <div>
                                     <label for="templateWa" class="block text-sm font-medium text-gray-700">Template Pesan WhatsApp</label>
-                                    <textarea id="templateWa" rows="6" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                                    <textarea id="templateWa" rows="6" class="macos-input mt-1 block w-full px-4 py-3 rounded-lg"></textarea>
                                     <p class="mt-1 text-xs text-gray-500">
                                         Gunakan variabel: 
                                         <code class="bg-gray-200 px-1 py-0.5 rounded text-xs">{nama}</code>, 
@@ -461,7 +738,7 @@ body.dark .icon-btn {
                                 </div>
                             </div>
                             <div class="flex justify-end mt-6">
-                                <button type="submit" class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                <button type="submit" class="macos-primary px-6 py-3 rounded-lg font-medium">
                                     Simpan Pengaturan
                                 </button>
                             </div>
@@ -469,43 +746,50 @@ body.dark .icon-btn {
                     </div>
                 </div>
             </div>
-
         </main>
 
         <!-- Floating Action Button (FAB) -->
-        <button id="fab-tambah-pelanggan" class="fixed bottom-24 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 z-40">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-                <path fill-rule="evenodd" d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
+        <button id="fab-tambah-pelanggan" class="macos-primary fixed bottom-24 right-6 text-white p-4 rounded-full shadow-lg z-40">
+            <!-- macOS Plus Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
         </button>
 
         <!-- Bottom Navigation Bar -->
-        <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md shadow-[0_-1px_3px_rgba(0,0,0,0.1)] z-30 border-t border-gray-200">
+        <nav class="glass-nav fixed bottom-0 left-0 right-0 shadow-[0_-1px_3px_rgba(0,0,0,0.1)] z-30">
             <div class="container mx-auto max-w-5xl flex justify-around h-16">
-                <button data-page="home" class="btn-nav flex flex-col items-center justify-center text-indigo-600 px-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-                        <path d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 1-1.06 1.06l-1.72-1.72V21a.75.75 0 0 1-.75.75h-5.25a.75.75 0 0 1-.75-.75V15a.75.75 0 0 0-.75-.75h-1.5a.75.75 0 0 0-.75.75v6a.75.75 0 0 1-.75.75H5.25a.75.75 0 0 1-.75-.75V11.875L2.81 13.59a.75.75 0 1 1-1.06-1.06l8.69-8.69Z" />
-                        <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z" />
+                <button data-page="home" class="btn-nav flex flex-col items-center justify-center text-blue-500 px-4">
+                    <!-- macOS Home Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
                     </svg>
                     <span class="text-xs font-medium">Home</span>
                 </button>
-                <button data-page="pelanggan" class="btn-nav flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 px-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479.5.5 0 0 0 .479-.479V11.75a.5.5 0 0 0-.479-.479M18 18.72a8.966 8.966 0 0 1-2.28 1.95c-.52.34-1.1.606-1.72.83M18 18.72v-7.01c0-.52-.34-1.1-.83-1.72a8.966 8.966 0 0 0-1.95-2.28c-.34-.52-.606-1.1-.83-1.72v-7.01c0-.52-.34-1.1-.83-1.72a8.966 8.966 0 0 0-1.95-2.28c-.34-.52-.606-1.1-.83-1.72V2.72c0-.52-.34-1.1-.83-1.72a8.966 8.966 0 0 0-1.95-2.28C8.966 3.22 8.7 3.48 8.47 4c-1.72.83-3.12 2.23-3.95 3.95C4.18 8.7 4 9.18 4 9.72v7.01c0 .52.34 1.1.83 1.72a8.966 8.966 0 0 0 1.95 2.28c.34.52.606 1.1.83 1.72v7.01c0 .52.34 1.1.83 1.72a8.966 8.966 0 0 0 1.95 2.28c.34.52.606 1.1.83 1.72h7.01c.52 0 1.1-.34 1.72-.83a8.966 8.966 0 0 0 2.28-1.95c.52-.34 1.1-.606 1.72-.83" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 12H4.5m7.5 7.5V12m0-7.5V12m7.5 0V12m0 7.5V12m0-7.5V12m-7.5 0h7.5m-7.5 7.5h7.5m-7.5-15h7.5m-7.5 7.5h7.5" />
+                <button data-page="pelanggan" class="btn-nav flex flex-col items-center justify-center text-gray-500 hover:text-blue-500 px-4">
+                    <!-- macOS Person Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
                     </svg>
                     <span class="text-xs font-medium">Pelanggan</span>
                 </button>
-                <button data-page="laporan" class="btn-nav flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 px-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h15.75c.621 0 1.125.504 1.125 1.125v6.75c0 .621-.504 1.125-1.125 1.125H4.125c-.621 0-1.125-.504-1.125-1.125v-6.75Z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 6.375C3 5.754 3.504 5.25 4.125 5.25h15.75c.621 0 1.125.504 1.125 1.125v6.75c0 .621-.504 1.125-1.125 1.125H4.125c-.621 0-1.125-.504-1.125-1.125v-6.75Z" />
+                <button data-page="laporan" class="btn-nav flex flex-col items-center justify-center text-gray-500 hover:text-blue-500 px-4">
+                    <!-- macOS Chart Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
                     </svg>
                     <span class="text-xs font-medium">Laporan</span>
                 </button>
-                <button data-page="pengaturan" class="btn-nav flex flex-col items-center justify-center text-gray-500 hover:text-indigo-600 px-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12a7.5 7.5 0 0 0 15 0m-15 0a7.5 7.5 0 1 1 15 0m-15 0H3m18 0h-1.5m-15 0a7.5 7.5 0 1 1 15 0m-15 0h.008v.008H3v-.008Zm15 0h.008v.008H18v-.008Zm-7.5 0h.008v.008H10.5v-.008Zm4.5 4.5h.008v.008H15v-.008Zm-9 0h.008v.008H6v-.008Z" />
+                <button data-page="pengaturan" class="btn-nav flex flex-col items-center justify-center text-gray-500 hover:text-blue-500 px-4">
+                    <!-- macOS Gear Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                     </svg>
                     <span class="text-xs font-medium">Pengaturan</span>
                 </button>
@@ -513,25 +797,24 @@ body.dark .icon-btn {
         </nav>
     </div>
 
-
     <!-- ============================================= -->
     <!-- MODALS (Hidden by default)                     -->
     <!-- ============================================= -->
 
     <!-- Modal Tambah/Edit Pelanggan -->
     <div id="customerModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
-        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-lg m-4 opacity-0 transform scale-95">
+        <div class="modal-content macos-modal w-full max-w-lg m-4 opacity-0 transform scale-95">
             <form id="customerForm" class="p-6">
                 <h3 class="text-xl font-semibold text-gray-900 mb-6" id="modalTitle">Tambah Pelanggan Baru</h3>
                 <input type="hidden" id="customerId">
                 <div class="space-y-4">
                     <div>
                         <label for="nama" class="block text-sm font-medium text-gray-700">Nama</label>
-                        <input type="text" id="nama" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                        <input type="text" id="nama" class="macos-input mt-1 block w-full px-4 py-3 rounded-lg" required>
                     </div>
                     <div>
                         <label for="paket" class="block text-sm font-medium text-gray-700">Paket</label>
-                        <select id="paket" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                        <select id="paket" class="macos-input mt-1 block w-full px-4 py-3 rounded-lg">
                             <option value="Paket 1">Paket 1</option>
                             <option value="Paket 2">Paket 2</option>
                             <option value="Paket 3">Paket 3</option>
@@ -539,22 +822,22 @@ body.dark .icon-btn {
                     </div>
                     <div>
                         <label for="harga" class="block text-sm font-medium text-gray-700">Harga Paket (Rp)</label>
-                        <input type="number" id="harga" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                        <input type="number" id="harga" class="macos-input mt-1 block w-full px-4 py-3 rounded-lg" required>
                     </div>
                     <div>
                         <label for="noHp" class="block text-sm font-medium text-gray-700">No. HP</label>
-                        <input type="tel" id="noHp" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: 628123456789">
+                        <input type="tel" id="noHp" class="macos-input mt-1 block w-full px-4 py-3 rounded-lg" placeholder="Contoh: 628123456789">
                     </div>
                     <div>
                         <label for="alamat" class="block text-sm font-medium text-gray-700">Alamat</label>
-                        <textarea id="alamat" rows="2" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                        <textarea id="alamat" rows="2" class="macos-input mt-1 block w-full px-4 py-3 rounded-lg"></textarea>
                     </div>
                 </div>
                 <div class="flex justify-end space-x-3 mt-8">
-                    <button type="button" class="btn-cancel px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="customerModal">
+                    <button type="button" class="macos-button px-6 py-3 text-gray-700 rounded-lg font-medium" data-modal="customerModal">
                         Batal
                     </button>
-                    <button type="submit" class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <button type="submit" class="macos-primary px-6 py-3 text-white rounded-lg font-medium">
                         Simpan
                     </button>
                 </div>
@@ -564,7 +847,7 @@ body.dark .icon-btn {
 
     <!-- Modal Pembayaran -->
     <div id="paymentModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
-        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
+        <div class="modal-content macos-modal w-full max-w-md m-4 opacity-0 transform scale-95">
             <div class="p-6">
                 <h3 class="text-xl font-semibold text-gray-900 mb-2">Pembayaran</h3>
                 <p class="text-sm text-gray-600 mb-4">Pelanggan: <span id="paymentCustomerName" class="font-medium"></span></p>
@@ -581,26 +864,36 @@ body.dark .icon-btn {
                     <hr>
                     <div class="flex justify-between text-lg">
                         <span class="font-semibold text-gray-800">Total Tagihan</span>
-                        <span id="paymentTotal" class="font-bold text-indigo-600">Rp 0</span>
+                        <span id="paymentTotal" class="font-bold text-blue-600">Rp 0</span>
                     </div>
                 </div>
 
                 <div>
                     <label for="paymentAmount" class="block text-sm font-medium text-gray-700">Jumlah Bayar (Rp)</label>
-                    <input type="number" id="paymentAmount" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Masukkan jumlah">
+                    <input type="number" id="paymentAmount" class="macos-input mt-1 block w-full px-4 py-3 rounded-lg" placeholder="Masukkan jumlah">
                     <input type="hidden" id="paymentCustomerId">
                     <input type="hidden" id="paymentTotalAmount">
                 </div>
 
                 <div class="flex flex-col space-y-3 mt-6">
                     <button id="btn-bayar-lunas" class="w-full px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        <!-- macOS Checkmark Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
                         Bayar LUNAS (Otomatis)
                     </button>
-                    <button id="btn-bayar-manual" class="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <button id="btn-bayar-manual" class="macos-primary w-full px-6 py-3 text-white rounded-lg font-medium">
+                        <!-- macOS Dollar Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="1" x2="12" y2="23"/>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
                         Bayar (Manual Sesuai Input)
                     </button>
                 </div>
-                <button type="button" class="btn-cancel w-full mt-3 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="paymentModal">
+                <button type="button" class="macos-button w-full mt-3 px-6 py-3 text-gray-700 rounded-lg font-medium" data-modal="paymentModal">
                     Batal
                 </button>
             </div>
@@ -609,7 +902,7 @@ body.dark .icon-btn {
 
     <!-- Modal Tagihan Prorata -->
     <div id="prorataModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
-        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
+        <div class="modal-content macos-modal w-full max-w-md m-4 opacity-0 transform scale-95">
             <div class="p-6">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4">Tagihan Prorata</h3>
                 <input type="hidden" id="prorataCustomerId">
@@ -617,26 +910,33 @@ body.dark .icon-btn {
                 <div class="space-y-4">
                     <div>
                         <label for="tglMulai" class="block text-sm font-medium text-gray-700">Tanggal Mulai Pemakaian</label>
-                        <input type="date" id="tglMulai" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <input type="date" id="tglMulai" class="macos-input mt-1 block w-full px-4 py-3 rounded-lg">
                     </div>
                     <div>
                         <label for="tglAkhir" class="block text-sm font-medium text-gray-700">Tanggal Akhir Pemakaian</label>
-                        <input type="date" id="tglAkhir" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <input type="date" id="tglAkhir" class="macos-input mt-1 block w-full px-4 py-3 rounded-lg">
                     </div>
                     <div>
                         <label for="hariPeriodik" class="block text-sm font-medium text-gray-700">Jumlah Hari dalam 1 Periode (Default: 30)</label>
-                        <input type="number" id="hariPeriodik" value="30" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <input type="number" id="hariPeriodik" value="30" class="macos-input mt-1 block w-full px-4 py-3 rounded-lg">
                     </div>
-                    <div id="prorataResult" class="hidden text-center p-4 bg-indigo-50 rounded-lg">
+                    <div id="prorataResult" class="hidden text-center p-4 bg-blue-50 rounded-lg">
                         <p class="text-sm text-gray-600">Jumlah Hari Pakai: <span id="prorataHari" class="font-medium">0</span> hari</p>
-                        <p class="text-lg font-semibold text-indigo-700">Total Tagihan Prorata: <span id="prorataTotal" class="font-bold">Rp 0</span></p>
+                        <p class="text-lg font-semibold text-blue-700">Total Tagihan Prorata: <span id="prorataTotal" class="font-bold">Rp 0</span></p>
                     </div>
                 </div>
                 <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" class="btn-cancel px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="prorataModal">
+                    <button type="button" class="macos-button px-6 py-3 text-gray-700 rounded-lg font-medium" data-modal="prorataModal">
                         Batal
                     </button>
-                    <button type="button" id="btn-buat-prorata" class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <button type="button" id="btn-buat-prorata" class="macos-primary px-6 py-3 text-white rounded-lg font-medium">
+                        <!-- macOS Calendar Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
                         Buat Tagihan Prorata
                     </button>
                 </div>
@@ -646,23 +946,33 @@ body.dark .icon-btn {
     
     <!-- Modal Kirim WA -->
     <div id="waModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
-        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-lg m-4 opacity-0 transform scale-95">
+        <div class="modal-content macos-modal w-full max-w-lg m-4 opacity-0 transform scale-95">
             <div class="p-6">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4">Kirim Tagihan WhatsApp</h3>
                 <p class="text-sm text-gray-600 mb-2">Pesan ini akan dikirim ke <span id="waCustomerName" class="font-medium"></span> (<span id="waCustomerPhone" class="font-medium"></span>)</p>
                 <input type="hidden" id="waLink">
                 
-                <textarea id="waMessagePreview" rows="8" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                <textarea id="waMessagePreview" rows="8" class="macos-input mt-1 block w-full px-4 py-3 rounded-lg bg-gray-50"></textarea>
 
                 <div class="flex flex-col sm:flex-row sm:space-x-3 mt-6">
                     <button type="button" id="btn-copy-wa" class="w-full sm:w-1/2 mb-2 sm:mb-0 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        <!-- macOS Copy Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
                         Copy Pesan
                     </button>
                     <a id="btn-kirim-wa" href="#" target="_blank" class="w-full sm:w-1/2 text-center px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        <!-- macOS Send Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
                         Kirim via WhatsApp
                     </a>
                 </div>
-                <button type="button" class="btn-cancel w-full mt-3 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="waModal">
+                <button type="button" class="macos-button w-full mt-3 px-6 py-3 text-gray-700 rounded-lg font-medium" data-modal="waModal">
                     Batal
                 </button>
             </div>
@@ -671,16 +981,22 @@ body.dark .icon-btn {
 
     <!-- Modal Import Excel -->
     <div id="importModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
-        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
+        <div class="modal-content macos-modal w-full max-w-md m-4 opacity-0 transform scale-95">
             <div class="p-6">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4">Import Data Excel</h3>
                 <p class="text-sm text-gray-600 mb-4">Pastikan file Excel Anda memiliki header (baris pertama) dengan nama kolom: <code class="bg-gray-200 px-1 py-0.5 rounded text-sm">NAMA</code>, <code class="bg-gray-200 px-1 py-0.5 rounded text-sm">PAKET</code>, <code class="bg-gray-200 px-1 py-0.5 rounded text-sm">HARGA</code>, <code class="bg-gray-200 px-1 py-0.5 rounded text-sm">NO HP</code>, <code class="bg-gray-200 px-1 py-0.5 rounded text-sm">ALAMAT</code>.</p>
-                <input type="file" id="excelFile" accept=".xlsx, .xls" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                <input type="file" id="excelFile" accept=".xlsx, .xls" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                 <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" class="btn-cancel px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="importModal">
+                    <button type="button" class="macos-button px-6 py-3 text-gray-700 rounded-lg font-medium" data-modal="importModal">
                         Batal
                     </button>
-                    <button type="button" id="btn-import-excel" class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                    <button type="button" id="btn-import-excel" class="macos-primary px-6 py-3 text-white rounded-lg font-medium">
+                        <!-- macOS Download Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
                         Import
                     </button>
                 </div>
@@ -690,16 +1006,21 @@ body.dark .icon-btn {
     
     <!-- Modal Buat Tagihan (1 Pelanggan) -->
     <div id="tagihanModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
-        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
+        <div class="modal-content macos-modal w-full max-w-md m-4 opacity-0 transform scale-95">
             <div class="p-6">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4">Buat Tagihan Manual</h3>
                 <p class="text-sm text-gray-600 mb-6">Ini akan menambahkan tagihan bulan ini (sesuai harga paket) ke total tagihan pelanggan. Anda yakin?</p>
                 <input type="hidden" id="tagihanCustomerId">
                 <div class="flex justify-end space-x-3">
-                    <button type="button" class="btn-cancel px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="tagihanModal">
+                    <button type="button" class="macos-button px-6 py-3 text-gray-700 rounded-lg font-medium" data-modal="tagihanModal">
                         Batal
                     </button>
-                    <button type="button" id="btn-konfirmasi-tagihan" class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    <button type="button" id="btn-konfirmasi-tagihan" class="macos-primary px-6 py-3 text-white rounded-lg font-medium">
+                        <!-- macOS Plus Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
                         Ya, Buat Tagihan
                     </button>
                 </div>
@@ -709,12 +1030,15 @@ body.dark .icon-btn {
 
     <!-- Modal Hapus Pelanggan -->
     <div id="deleteModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
-        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
+        <div class="modal-content macos-modal w-full max-w-md m-4 opacity-0 transform scale-95">
             <div class="p-6">
                 <div class="flex items-center">
                     <div class="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                        <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        <!-- macOS Warning Icon -->
+                        <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
                         </svg>
                     </div>
                     <div class="ml-4">
@@ -724,10 +1048,16 @@ body.dark .icon-btn {
                 </div>
                 <input type="hidden" id="deleteCustomerId">
                 <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" class="btn-cancel px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="deleteModal">
+                    <button type="button" class="macos-button px-6 py-3 text-gray-700 rounded-lg font-medium" data-modal="deleteModal">
                         Batal
                     </button>
                     <button type="button" id="btn-konfirmasi-hapus" class="px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                        <!-- macOS Trash Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
                         Ya, Hapus
                     </button>
                 </div>
@@ -737,12 +1067,15 @@ body.dark .icon-btn {
 
     <!-- Modal Hapus SEMUA Data -->
     <div id="deleteSemuaModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
-        <div class="modal-content bg-white rounded-xl shadow-xl w-full max-w-md m-4 opacity-0 transform scale-95">
+        <div class="modal-content macos-modal w-full max-w-md m-4 opacity-0 transform scale-95">
             <div class="p-6">
                 <div class="flex items-center">
                     <div class="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                        <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        <!-- macOS Warning Icon -->
+                        <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
                         </svg>
                     </div>
                     <div class="ml-4">
@@ -751,10 +1084,16 @@ body.dark .icon-btn {
                     </div>
                 </div>
                 <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" class="btn-cancel px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" data-modal="deleteSemuaModal">
+                    <button type="button" class="macos-button px-6 py-3 text-gray-700 rounded-lg font-medium" data-modal="deleteSemuaModal">
                         Batal
                     </button>
                     <button type="button" id="btn-konfirmasi-hapus-semua" class="px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                        <!-- macOS Trash Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
                         Ya, Hapus Semua
                     </button>
                 </div>
@@ -767,6 +1106,18 @@ body.dark .icon-btn {
         <span id="infoMessage"></span>
     </div>
 
+    <!-- Dark Mode Toggle -->
+    <div id="darkModeToggle" title="Mode Malam / Terang">
+        <!-- Sun Icon -->
+        <svg class="sun" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="5"/>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+        <!-- Moon Icon -->
+        <svg class="moon" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+    </div>
 
     <!-- ============================================= -->
     <!-- Firebase SDK dan JavaScript Aplikasi         -->
@@ -1036,29 +1387,35 @@ body.dark .icon-btn {
                 const isLunas = totalTagihan === 0;
 
                 const card = document.createElement('div');
-                card.className = `bg-white shadow-md rounded-lg p-5 flex flex-col justify-between ${isLunas ? 'status-border-lunas' : 'status-border-tunggak'}`;
+                card.className = `glass-card rounded-xl p-5 flex flex-col justify-between card-hover ${isLunas ? 'status-border-lunas' : 'status-border-tunggak'}`;
                 
                 card.innerHTML = `
                     <div>
                         <div class="flex justify-between items-start">
                             <h3 class="text-lg font-semibold text-gray-800">${customer.nama}</h3>
                             <div class="flex space-x-1">
-                                <button class="btn-edit p-1 text-gray-400 hover:text-indigo-600" data-id="${customer.id}" title="Edit Pelanggan">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                                        <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
-                                        <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.18l3.75-3.75a1.651 1.651 0 0 1 2.333 0L8.41 7.39a1.651 1.651 0 0 1 0 2.333l-2.021 2.021a1.651 1.651 0 0 1-2.333 0l-3.39-3.39Zm12.021 0a1.651 1.651 0 0 1 0-1.18l3.75-3.75a1.651 1.651 0 0 1 2.333 0L21.09 7.39a1.651 1.651 0 0 1 0 2.333l-2.021 2.021a1.651 1.651 0 0 1-2.333 0l-3.39-3.39Z" clip-rule="evenodd" />
+                                <button class="btn-edit p-1 text-gray-400 hover:text-blue-600" data-id="${customer.id}" title="Edit Pelanggan">
+                                    <!-- macOS Edit Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                     </svg>
                                 </button>
                                 ${!isLunas ? `
                                 <button class="btn-tagih p-1 text-gray-400 hover:text-blue-600" data-id="${customer.id}" title="Buat Tagihan Manual">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                                      <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clip-rule="evenodd" />
+                                    <!-- macOS Plus Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                                        <line x1="12" y1="5" x2="12" y2="19"/>
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
                                     </svg>
                                 </button>
                                 ` : ''}
                                 <button class="btn-delete p-1 text-gray-400 hover:text-red-600" data-id="${customer.id}" title="Hapus">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                                        <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 0 0-.53 1.025l.155.433c.365.966.746 1.925 1.15 2.872A8.9 8.9 0 0 0 8 13.5a.75.75 0 0 0 1.5 0c0-1.01.12-1.98.34-2.923.404-.947.785-1.906 1.15-2.872l.155-.433a.75.75 0 0 0-.53-1.025c-.78-.122-1.57-.22-2.365-.298V3.75A2.75 2.75 0 0 0 8.75 1ZM6.082 8.75c-.351-.81-.676-1.583-.976-2.316l-.008-.02-.013-.036a.75.75 0 0 1 1.025-.53l.433.155c.78.28 1.557.534 2.306.756a.75.75 0 0 0 .588 0c.749-.222 1.526-.476 2.306-.756l.433-.155a.75.75 0 0 1 1.025.53l-.013.036-.008.02c-.3.732-.625 1.506-.976 2.316a51.64 51.64 0 0 1-.84 1.953.75.75 0 0 0 .346 1.039l.23.115a.75.75 0 0 1 0 1.29l-.23.115a.75.75 0 0 0-.346 1.039c.27.625.568 1.28.84 1.953.301.732.625 1.506.976 2.316l.008.02.013.036a.75.75 0 0 1-1.025.53l-.433-.155c-.78-.28-1.557-.534-2.306-.756a.75.75 0 0 0-.588 0c-.749-.222-1.526-.476-2.306-.756l-.433-.155a.75.75 0 0 1-1.025-.53l.013-.036.008-.02c.3-.732.625 1.506.976 2.316.27-.625.568-1.28.84-1.953a.75.75 0 0 0-.346-1.039l-.23-.115a.75.75 0 0 1 0-1.29l.23-.115a.75.75 0 0 0 .346-1.039c-.27-.625-.568-1.28-.84-1.953Z" clip-rule="evenodd" />
+                                    <!-- macOS Trash Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                                        <path d="M3 6h18"/>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                                        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                                     </svg>
                                 </button>
                             </div>
@@ -1084,20 +1441,39 @@ body.dark .icon-btn {
 
                     <div class="mt-5 flex ${isLunas ? 'justify-end' : 'flex-col sm:flex-row'} items-center ${isLunas ? '' : 'space-y-2 sm:space-y-0 sm:space-x-2'}">
                         ${isLunas ? `
-                            <span class="text-sm font-semibold text-green-600 flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 mr-1">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
+                            <span class="status-lunas flex items-center">
+                                <!-- macOS Checkmark Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-1">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                    <polyline points="22 4 12 14.01 9 11.01"/>
                                 </svg>
                                 LUNAS
                             </span>
                         ` : `
-                            <button class="btn-bayar w-full px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" data-id="${customer.id}">
+                            <button class="btn-bayar w-full px-4 py-2 macos-primary text-white rounded-lg text-sm font-medium" data-id="${customer.id}">
+                                <!-- macOS Dollar Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="1" x2="12" y2="23"/>
+                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                                </svg>
                                 Bayar
                             </button>
                             <button class="btn-wa w-full px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500" data-id="${customer.id}">
+                                <!-- macOS Send Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="22" y1="2" x2="11" y2="13"/>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                </svg>
                                 Kirim WA
                             </button>
                             <button class="btn-prorata w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500" data-id="${customer.id}">
+                                <!-- macOS Calendar Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
                                 Prorata
                             </button>
                         `}
@@ -1142,7 +1518,7 @@ body.dark .icon-btn {
         function updateFilterCounts() {
             const lunasCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0).length;
             const belumBayarCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) > 0).length;
-            const adaTunggakanCount = customersData.filter(c => (c.tunggakan || 0) > 0).length;
+            const adaTunggakanCount = customersData.filter(c => (c.tunggakan || 0) > 0);
 
             const countLunas = document.getElementById('count-lunas');
             const countBelumBayar = document.getElementById('count-belum-bayar');
@@ -1714,7 +2090,6 @@ body.dark .icon-btn {
             }
         }
 
-
         // =============================================
         // EVENT LISTENERS (Digabungkan)
         // =============================================
@@ -1739,8 +2114,8 @@ body.dark .icon-btn {
                     
                     // Update status aktif tombol nav
                     navButtons.forEach(btn => {
-                        btn.classList.add('text-gray-500', 'hover:text-indigo-600');
-                        btn.classList.remove('text-indigo-600');
+                        btn.classList.add('text-gray-500', 'hover:text-blue-500');
+                        btn.classList.remove('text-blue-500');
                         // Ganti ikon ke outline (jika ada)
                         const svg = btn.querySelector('svg');
                         if (svg) {
@@ -1748,8 +2123,8 @@ body.dark .icon-btn {
                         }
                     });
                     
-                    button.classList.add('text-indigo-600');
-                    button.classList.remove('text-gray-500', 'hover:text-indigo-600');
+                    button.classList.add('text-blue-500');
+                    button.classList.remove('text-gray-500', 'hover:text-blue-500');
                     // Ganti ikon ke solid (jika ada)
                     const svg = button.querySelector('svg');
                     if (svg) {
@@ -1772,7 +2147,6 @@ body.dark .icon-btn {
             if(homeNavButton) {
                  homeNavButton.innerHTML = homeNavButton.innerHTML.replace('fill="none" stroke-width="1.5" stroke="currentColor"', 'fill="currentColor"');
             }
-
 
             // --- Event Listener untuk Modals ---
             
@@ -1822,13 +2196,11 @@ body.dark .icon-btn {
                 
                 // Update UI Tab
                 filterNav.querySelectorAll('.tab-filter').forEach(tab => {
-                    tab.classList.remove('text-indigo-600', 'border-indigo-500');
-                    tab.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
-                    tab.removeAttribute('aria-current');
+                    tab.classList.remove('active');
+                    tab.classList.add('text-gray-500', 'hover:text-gray-700');
                 });
-                target.classList.add('text-indigo-600', 'border-indigo-500');
-                target.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
-                target.setAttribute('aria-current', 'page');
+                target.classList.add('active');
+                target.classList.remove('text-gray-500', 'hover:text-gray-700');
                 
                 // Render ulang list
                 renderCustomers(currentFilter);
@@ -1897,72 +2269,19 @@ body.dark .icon-btn {
                     showWaModal(id);
                 }
             });
+
+            // --- Dark Mode Toggle ---
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            darkModeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('dark');
+                localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+            });
+
+            // Apply saved theme on load
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark');
+            }
         });
-
     </script>
-
-<!-- 🌙 Dark Mode Toggle Script -->
-<script>
-document.addEventListener("DOMContentLoaded", function(){
-  const body = document.body;
-  const toggle = document.getElementById("darkToggle");
-
-  // apply saved theme
-  const saved = localStorage.getItem("darkMode");
-  if (saved === "true") {
-    body.classList.add("dark");
-    if (toggle) toggle.checked = true;
-  }
-
-  if (toggle) {
-    toggle.addEventListener("change", function() {
-      const isDark = toggle.checked;
-      if (isDark) {
-        body.classList.add("dark");
-        localStorage.setItem("darkMode", "true");
-      } else {
-        body.classList.remove("dark");
-        localStorage.setItem("darkMode", "false");
-      }
-    });
-  }
-});
-</script>
-
-
-<!-- 🌞/🌙 Floating Dark Mode Toggle -->
-<div id="darkModeFloating" title="Mode Malam / Terang">
-  <!-- Sun Icon -->
-  <svg class="sun" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="5"/>
-    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-  </svg>
-  <!-- Moon Icon -->
-  <svg class="moon" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-  </svg>
-</div>
-
-
-<!-- Floating Dark Mode Script -->
-<script>
-document.addEventListener("DOMContentLoaded", function(){
-  const body = document.body;
-  const btn = document.getElementById("darkModeFloating");
-
-  const saved = localStorage.getItem("darkMode");
-  if (saved === "true") {
-    body.classList.add("dark");
-    btn.classList.add("active");
-  }
-
-  btn.addEventListener("click", () => {
-    const isDark = body.classList.toggle("dark");
-    btn.classList.toggle("active");
-    localStorage.setItem("darkMode", isDark ? "true" : "false");
-  });
-});
-</script>
-
 </body>
 </html>
