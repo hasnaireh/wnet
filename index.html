@@ -30,6 +30,38 @@
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: #f1f5f9;
         }
+
+		/* PERBAIKAN CEPAT UNTUK CHART DARK MODE */
+body.dark #chartContainer * {
+    color: #e2e8f0 !important;
+}
+
+body.dark #chartContainer .bg-green-100 {
+    background-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+body.dark #chartContainer .bg-green-800 {
+    background-color: #10b981 !important;
+}
+
+body.dark #chartContainer .bg-red-100 {
+    background-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+body.dark #chartContainer .bg-red-800 {
+    background-color: #ef4444 !important;
+}
+
+/* Pastikan chart bars tetap berwarna */
+body.dark #chartContainer .bg-green-400,
+body.dark #chartContainer .bg-green-500 {
+    background-color: #10b981 !important;
+}
+
+body.dark #chartContainer .bg-red-400,
+body.dark #chartContainer .bg-red-500 {
+    background-color: #ef4444 !important;
+}
         
         /* Glassmorphism effect untuk card dan panel */
         .glass-card {
@@ -2607,3 +2639,4 @@ document.querySelectorAll('.btn-nav').forEach(button => {
 		</script>
 </body>
 </html>
+
