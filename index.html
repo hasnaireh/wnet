@@ -197,10 +197,10 @@
         /* Floating Dark Mode Toggle */
         #darkModeToggle {
             position: fixed;
-            bottom: 28px;
-            right: 28px;
-            width: 60px;
-            height: 60px;
+            bottom: 100px;
+            left: 28px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(10px);
@@ -454,6 +454,22 @@
         body.dark #prorataTotal {
             color: #60a5fa !important;
         }
+
+        /* Edit tunggakan button */
+        .btn-edit-tunggakan {
+            transition: all 0.2s ease;
+        }
+
+        .btn-edit-tunggakan:hover {
+            transform: scale(1.1);
+            color: #007AFF !important;
+        }
+
+        /* Chart container */
+        .chart-container {
+            height: 300px;
+            width: 100%;
+        }
     </style>
 </head>
 <body class="h-screen overflow-hidden flex flex-col">
@@ -558,7 +574,7 @@
                 <div class="container mx-auto max-w-5xl p-4">
                     <h2 class="text-2xl font-semibold text-gray-800 mb-4">Ringkasan Pembukuan</h2>
                     
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <!-- Card Total Tagihan -->
                         <div class="glass-card p-6 rounded-xl card-hover">
                             <div class="flex items-center">
@@ -627,6 +643,41 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Card Total Tunggakan -->
+                        <div id="analytic-card-tunggakan" class="glass-card p-6 rounded-xl card-hover cursor-pointer">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 bg-yellow-500 rounded-xl p-3">
+                                    <!-- macOS Warning Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                                        <line x1="12" y1="9" x2="12" y2="13"/>
+                                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-500 truncate">Total Tunggakan</p>
+                                    <p id="analytic-total-tunggakan" class="text-2xl font-bold text-gray-900">Rp 0</p>
+                                    <p id="analytic-count-tunggakan" class="text-sm text-gray-500">0 pelanggan</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistik Chart -->
+                    <div class="mt-8">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-semibold text-gray-800">Statistik Bulanan</h3>
+                            <select id="chartType" class="macos-input text-sm px-3 py-2 rounded-lg">
+                                <option value="pendapatan">Pendapatan</option>
+                                <option value="tunggakan">Tunggakan</option>
+                            </select>
+                        </div>
+                        <div class="glass-card p-6 rounded-xl">
+                            <div id="chartContainer" class="chart-container flex items-center justify-center">
+                                <p class="text-gray-500">Fitur statistik akan segera hadir</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -640,18 +691,18 @@
                     <div class="mb-4">
                         <div class="sm:border-b sm:border-gray-200">
                             <nav id="filter-nav" class="flex -mb-px space-x-4 sm:space-x-6 overflow-x-auto" aria-label="Tabs">
-                                <button data-filter="semua" class="macos-tab flex items-center whitespace-nowrap py-3 px-1 font-medium text-sm active" aria-current="page">
+                                <button data-filter="semua" class="tab-filter macos-tab flex items-center whitespace-nowrap py-3 px-1 font-medium text-sm active" aria-current="page">
                                     Semua
                                 </button>
-                                <button data-filter="belum-bayar" class="macos-tab flex items-center whitespace-nowrap py-3 px-1 font-medium text-sm text-gray-500 hover:text-gray-700">
+                                <button data-filter="belum-bayar" class="tab-filter macos-tab flex items-center whitespace-nowrap py-3 px-1 font-medium text-sm text-gray-500 hover:text-gray-700">
                                     Belum Bayar
                                     <span id="count-belum-bayar" class="ml-2 hidden bg-red-100 text-red-600 py-0.5 px-2 rounded-full text-xs font-medium">0</span>
                                 </button>
-                                <button data-filter="ada-tunggakan" class="macos-tab flex items-center whitespace-nowrap py-3 px-1 font-medium text-sm text-gray-500 hover:text-gray-700">
+                                <button data-filter="ada-tunggakan" class="tab-filter macos-tab flex items-center whitespace-nowrap py-3 px-1 font-medium text-sm text-gray-500 hover:text-gray-700">
                                     Ada Tunggakan
                                     <span id="count-ada-tunggakan" class="ml-2 hidden bg-yellow-100 text-yellow-600 py-0.5 px-2 rounded-full text-xs font-medium">0</span>
                                 </button>
-                                <button data-filter="lunas" class="macos-tab flex items-center whitespace-nowrap py-3 px-1 font-medium text-sm text-gray-500 hover:text-gray-700">
+                                <button data-filter="lunas" class="tab-filter macos-tab flex items-center whitespace-nowrap py-3 px-1 font-medium text-sm text-gray-500 hover:text-gray-700">
                                     Lunas
                                     <span id="count-lunas" class="ml-2 hidden bg-green-100 text-green-600 py-0.5 px-2 rounded-full text-xs font-medium">0</span>
                                 </button>
@@ -661,7 +712,7 @@
 
                     <!-- Search Bar -->
                     <div class="mb-4 relative">
-                        <input type="text" id="search-bar" placeholder="Cari nama pelanggan..." class="macos-input w-full pl-10 pr-4 py-3 rounded-lg">
+                        <input type="text" id="search-bar" placeholder="Cari nama pelanggan..." class="macos-input w-full pl-10 pr-10 py-3 rounded-lg">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <!-- macOS Search Icon -->
                             <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -669,6 +720,13 @@
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                             </svg>
                         </div>
+                        <button id="clear-search" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 hidden">
+                            <!-- macOS X Icon -->
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
                     </div>
 
                     <!-- Customer List -->
@@ -749,7 +807,7 @@
         </main>
 
         <!-- Floating Action Button (FAB) -->
-        <button id="fab-tambah-pelanggan" class="macos-primary fixed bottom-24 right-6 text-white p-4 rounded-full shadow-lg z-40">
+        <button id="fab-tambah-pelanggan" class="macos-primary fixed bottom-24 right-6 text-white p-4 rounded-full shadow-lg z-40 hidden">
             <!-- macOS Plus Icon -->
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
                 <line x1="12" y1="5" x2="12" y2="19"/>
@@ -800,6 +858,57 @@
     <!-- ============================================= -->
     <!-- MODALS (Hidden by default)                     -->
     <!-- ============================================= -->
+
+    <!-- Modal Edit Tunggakan -->
+    <div id="editTunggakanModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
+        <div class="modal-content macos-modal w-full max-w-md m-4 opacity-0 transform scale-95">
+            <div class="p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Edit Tunggakan</h3>
+                <p class="text-sm text-gray-600 mb-4">Pelanggan: <span id="editTunggakanCustomerName" class="font-medium"></span></p>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="editTunggakanAmount" class="block text-sm font-medium text-gray-700">Jumlah Tunggakan (Rp)</label>
+                        <input type="number" id="editTunggakanAmount" class="macos-input mt-1 block w-full px-4 py-3 rounded-lg" placeholder="Masukkan jumlah tunggakan">
+                        <input type="hidden" id="editTunggakanCustomerId">
+                    </div>
+                    
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <!-- macOS Warning Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                                    <line x1="12" y1="9" x2="12" y2="13"/>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-yellow-700">
+                                    <span class="font-medium">Perhatian:</span> Mengubah nilai tunggakan akan mempengaruhi total tagihan pelanggan.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" class="macos-button px-6 py-3 text-gray-700 rounded-lg font-medium" data-modal="editTunggakanModal">
+                        Batal
+                    </button>
+                    <button type="button" id="btn-simpan-tunggakan" class="macos-primary px-6 py-3 text-white rounded-lg font-medium">
+                        <!-- macOS Save Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        Simpan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal Tambah/Edit Pelanggan -->
     <div id="customerModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 modal-backdrop items-center justify-center z-50 hidden">
@@ -1430,7 +1539,16 @@
                             </div>
                             <div class="flex justify-between items-center mb-1">
                                 <span class="text-xs text-gray-500">Tunggakan</span>
-                                <span class="text-sm font-medium text-gray-700">${formatRupiah(customer.tunggakan || 0)}</span>
+                                <div class="flex items-center space-x-1">
+                                    <span class="text-sm font-medium text-gray-700">${formatRupiah(customer.tunggakan || 0)}</span>
+                                    <button class="btn-edit-tunggakan p-1 text-gray-400 hover:text-blue-600" data-id="${customer.id}" data-tunggakan="${customer.tunggakan || 0}" title="Edit Tunggakan">
+                                        <!-- macOS Edit Icon (Small) -->
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                             <div class="flex justify-between items-center">
                                 <span class="text-sm font-semibold text-gray-800">Total Tagihan</span>
@@ -1505,20 +1623,24 @@
         function updateAnalytics() {
             const totalPelanggan = customersData.length;
             const totalTagihanAktif = customersData.reduce((acc, c) => acc + (c.tunggakan || 0) + (c.tagihanBulanIni || 0), 0);
+            const totalTunggakan = customersData.reduce((acc, c) => acc + (c.tunggakan || 0), 0);
             const lunasCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0).length;
             const belumLunasCount = totalPelanggan - lunasCount;
+            const adaTunggakanCount = customersData.filter(c => (c.tunggakan || 0) > 0).length;
             
             document.getElementById('analytic-total-tagihan').textContent = formatRupiah(totalTagihanAktif);
             document.getElementById('analytic-total-pelanggan').textContent = totalPelanggan;
             document.getElementById('analytic-lunas').textContent = lunasCount;
             document.getElementById('analytic-belum-lunas').textContent = belumLunasCount;
+            document.getElementById('analytic-total-tunggakan').textContent = formatRupiah(totalTunggakan);
+            document.getElementById('analytic-count-tunggakan').textContent = `${adaTunggakanCount} pelanggan`;
         }
 
         // Update jumlah count di filter tabs
         function updateFilterCounts() {
             const lunasCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0).length;
             const belumBayarCount = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) > 0).length;
-            const adaTunggakanCount = customersData.filter(c => (c.tunggakan || 0) > 0);
+            const adaTunggakanCount = customersData.filter(c => (c.tunggakan || 0) > 0).length; // PERBAIKAN: .length bukan array
 
             const countLunas = document.getElementById('count-lunas');
             const countBelumBayar = document.getElementById('count-belum-bayar');
@@ -1526,7 +1648,7 @@
 
             countLunas.textContent = lunasCount;
             countBelumBayar.textContent = belumBayarCount;
-            countAdaTunggakan.textContent = adaTunggakanCount;
+            countAdaTunggakan.textContent = adaTunggakanCount; // PERBAIKAN: langsung angka, bukan array
 
             countLunas.classList.toggle('hidden', lunasCount === 0);
             countBelumBayar.classList.toggle('hidden', belumBayarCount === 0);
@@ -1588,6 +1710,58 @@
                     infoModal.classList.add('hidden');
                 }, 300);
             }, 3000);
+        }
+
+        // Setup clear search button
+        function setupSearchClear() {
+            const searchInput = document.getElementById('search-bar');
+            const clearButton = document.getElementById('clear-search');
+            
+            searchInput.addEventListener('input', function() {
+                clearButton.classList.toggle('hidden', this.value === '');
+            });
+            
+            clearButton.addEventListener('click', function() {
+                searchInput.value = '';
+                searchInput.focus();
+                clearButton.classList.add('hidden');
+                renderCustomers(currentFilter);
+            });
+        }
+
+        // Tampilkan modal edit tunggakan
+        function showEditTunggakanModal(id, currentTunggakan) {
+            const customer = customersData.find(c => c.id === id);
+            if (!customer) return;
+
+            document.getElementById('editTunggakanCustomerName').textContent = customer.nama;
+            document.getElementById('editTunggakanAmount').value = currentTunggakan || 0;
+            document.getElementById('editTunggakanCustomerId').value = id;
+
+            toggleModal('editTunggakanModal', true);
+        }
+
+        // Simpan perubahan tunggakan
+        async function saveTunggakan() {
+            const id = document.getElementById('editTunggakanCustomerId').value;
+            const jumlahTunggakan = parseFloat(document.getElementById('editTunggakanAmount').value) || 0;
+
+            if (jumlahTunggakan < 0) {
+                showInfoModal('Jumlah tunggakan tidak boleh negatif.', 'error');
+                return;
+            }
+
+            try {
+                const customerRef = doc(customersCollection, id);
+                await updateDoc(customerRef, {
+                    tunggakan: jumlahTunggakan
+                });
+                showInfoModal('Tunggakan berhasil diperbarui!');
+                toggleModal('editTunggakanModal', false);
+            } catch (error) {
+                console.error("Error updating tunggakan:", error);
+                showInfoModal('Gagal memperbarui tunggakan.', 'error');
+            }
         }
 
         // Tampilkan modal tambah pelanggan
@@ -2099,6 +2273,9 @@
             initializeLockScreen(); // Siapkan layar kunci
             lockForm.addEventListener('submit', handleLogin); // Listener untuk form login
 
+            // --- Setup Clear Search ---
+            setupSearchClear();
+
             // --- Event Listener Navigasi Tab Bawah ---
             const pages = document.querySelectorAll('.page');
             const navButtons = document.querySelectorAll('.btn-nav');
@@ -2150,9 +2327,12 @@
 
             // --- Event Listener untuk Modals ---
             
-            // Tombol Batal
-            document.querySelectorAll('.btn-cancel').forEach(btn => {
-                btn.addEventListener('click', () => toggleModal(btn.dataset.modal, false));
+            // PERBAIKAN: Tombol Batal dengan selector yang benar
+            document.querySelectorAll('button[data-modal]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const modalId = btn.dataset.modal;
+                    toggleModal(modalId, false);
+                });
             });
             
             // Klik di luar modal (backdrop)
@@ -2218,12 +2398,18 @@
             document.getElementById('analytic-card-belum-lunas').addEventListener('click', () => {
                 navigateToTab('pelanggan', 'belum-bayar');
             });
+            document.getElementById('analytic-card-tunggakan').addEventListener('click', () => {
+                navigateToTab('pelanggan', 'ada-tunggakan');
+            });
 
             // --- Event Listener Form ---
             document.getElementById('customerForm').addEventListener('submit', saveCustomer);
             document.getElementById('fab-tambah-pelanggan').addEventListener('click', () => showCustomerModal());
             document.getElementById('tambah-pelanggan-empty').addEventListener('click', () => showCustomerModal());
             document.getElementById('settingsForm').addEventListener('submit', saveSettings);
+            
+            // Edit Tunggakan Modal
+            document.getElementById('btn-simpan-tunggakan').addEventListener('click', saveTunggakan);
             
             // Payment Modal
             document.getElementById('btn-bayar-lunas').addEventListener('click', () => handlePayment(true));
@@ -2252,6 +2438,10 @@
                 if (target.classList.contains('btn-edit')) {
                     const customer = customersData.find(c => c.id === id);
                     showCustomerModal(customer);
+                }
+                if (target.classList.contains('btn-edit-tunggakan')) {
+                    const currentTunggakan = parseFloat(target.dataset.tunggakan) || 0;
+                    showEditTunggakanModal(id, currentTunggakan);
                 }
                 if (target.classList.contains('btn-delete')) {
                     showDeleteModal(id);
