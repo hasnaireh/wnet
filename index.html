@@ -57,6 +57,18 @@ body.dark #page-laporan .border-gray-100 {
 body.dark #page-laporan .border-gray-200 {
     border-color: rgba(255, 255, 255, 0.2) !important;
 }
+
+		/* QUICK FIX UNTUK SCROLL LAPORAN */
+#page-laporan {
+    height: 100vh !important;
+    overflow-y: scroll !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+#page-laporan .container {
+    min-height: 100% !important;
+    padding-bottom: 100px !important;
+}
 		
         /* Tema Light (Default) */
         body {
@@ -3134,5 +3146,6 @@ document.querySelectorAll('.btn-nav').forEach(button => {
 		</script>
 </body>
 </html>
+
 
 
