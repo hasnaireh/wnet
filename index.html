@@ -556,6 +556,22 @@
             height: 300px;
             width: 100%;
         }
+
+        /* PERBAIKAN UNTUK TAB FILTER DI MOBILE */
+        #filter-nav {
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        /* PERBAIKAN UNTUK TOMBOL DELETE DI TABEL */
+        .btn-delete-transaksi {
+            transition: all 0.2s ease;
+        }
+
+        .btn-delete-transaksi:hover {
+            transform: scale(1.1);
+            color: #EF4444 !important;
+        }
     </style>
 </head>
 <body class="h-screen overflow-hidden flex flex-col">
@@ -1015,11 +1031,12 @@
                                             <th class="text-left py-3 px-4 text-sm font-medium text-gray-700">Pelanggan</th>
                                             <th class="text-left py-3 px-4 text-sm font-medium text-gray-700">Jenis</th>
                                             <th class="text-right py-3 px-4 text-sm font-medium text-gray-700">Jumlah</th>
+                                            <th class="text-center py-3 px-4 text-sm font-medium text-gray-700">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody id="reportTransactions">
                                         <tr>
-                                            <td colspan="4" class="text-center py-8 text-gray-500">
+                                            <td colspan="5" class="text-center py-8 text-gray-500">
                                                 Pilih periode dan generate laporan untuk melihat data
                                             </td>
                                         </tr>
@@ -1657,7 +1674,10 @@
                 
                 paymentsSnapshot.forEach(doc => {
                     const payment = doc.data();
-                    paymentsData.push(payment);
+                    paymentsData.push({
+                        id: doc.id,
+                        ...payment
+                    });
                     totalPendapatan += payment.jumlahBayar;
                 });
                 
@@ -1720,7 +1740,7 @@
             if (payments.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="4" class="text-center py-8 text-gray-500">
+                        <td colspan="5" class="text-center py-8 text-gray-500">
                             Tidak ada transaksi dalam periode ini
                         </td>
                     </tr>
@@ -1743,6 +1763,15 @@
                     </td>
                     <td class="py-3 px-4 text-sm text-right font-medium text-gray-900">
                         ${formatRupiah(payment.jumlahBayar)}
+                    </td>
+                    <td class="py-3 px-4 text-sm text-center">
+                        <button class="btn-delete-transaksi p-1 text-gray-400 hover:text-red-600" data-id="${payment.id}" data-customer-id="${payment.customerId}" data-jumlah="${payment.jumlahBayar}" title="Hapus Transaksi">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                                <path d="M3 6h18"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
                     </td>
                 </tr>
             `).join('');
@@ -1826,6 +1855,9 @@
                 return;
             }
             
+            // Generate nama file berdasarkan periode
+            const filename = generateReportFilename(currentReportData.period, currentReportData.startDate, currentReportData.endDate) + '.csv';
+            
             // Header CSV
             let csv = 'Tanggal,Pelanggan,Jenis Bayar,Jumlah\n';
             
@@ -1839,24 +1871,6 @@
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            
-            // Generate filename berdasarkan periode
-            let filename = 'laporan-';
-            switch(currentReportData.period) {
-                case 'bulan-ini': filename += 'bulan-ini'; break;
-                case 'bulan-lalu': filename += 'bulan-lalu'; break;
-                case '3-bulan': filename += '3-bulan-terakhir'; break;
-                case '6-bulan': filename += '6-bulan-terakhir'; break;
-                case 'tahun-ini': filename += 'tahun-ini'; break;
-                case 'custom': 
-                    const start = new Date(currentReportData.startDate).toISOString().split('T')[0];
-                    const end = new Date(currentReportData.endDate).toISOString().split('T')[0];
-                    filename += `${start}-to-${end}`;
-                    break;
-                default: filename += new Date().toISOString().split('T')[0];
-            }
-            filename += '.csv';
-            
             a.download = filename;
             document.body.appendChild(a);
             a.click();
@@ -1877,25 +1891,17 @@
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 
+                // Generate nama file dan judul berdasarkan periode
+                const filename = generateReportFilename(currentReportData.period, currentReportData.startDate, currentReportData.endDate) + '.pdf';
+                const reportTitle = generateReportTitle(currentReportData.period, currentReportData.startDate, currentReportData.endDate);
+                
                 // Judul
                 doc.setFontSize(20);
-                doc.text('LAPORAN KEUANGAN', 105, 15, { align: 'center' });
+                doc.text(reportTitle, 105, 15, { align: 'center' });
                 
                 // Periode
                 doc.setFontSize(12);
-                let periodText = 'Periode: ';
-                switch(currentReportData.period) {
-                    case 'bulan-ini': periodText += 'Bulan Ini'; break;
-                    case 'bulan-lalu': periodText += 'Bulan Lalu'; break;
-                    case '3-bulan': periodText += '3 Bulan Terakhir'; break;
-                    case '6-bulan': periodText += '6 Bulan Terakhir'; break;
-                    case 'tahun-ini': periodText += 'Tahun Ini'; break;
-                    case 'custom': 
-                        const start = new Date(currentReportData.startDate).toLocaleDateString('id-ID');
-                        const end = new Date(currentReportData.endDate).toLocaleDateString('id-ID');
-                        periodText += `${start} - ${end}`;
-                        break;
-                }
+                let periodText = 'Periode: ' + generatePeriodText(currentReportData.period, currentReportData.startDate, currentReportData.endDate);
                 doc.text(periodText, 14, 25);
                 
                 // Tanggal generate
@@ -1933,23 +1939,6 @@
                     headStyles: { fillColor: [59, 130, 246] }
                 });
                 
-                // Generate filename
-                let filename = 'laporan-';
-                switch(currentReportData.period) {
-                    case 'bulan-ini': filename += 'bulan-ini'; break;
-                    case 'bulan-lalu': filename += 'bulan-lalu'; break;
-                    case '3-bulan': filename += '3-bulan-terakhir'; break;
-                    case '6-bulan': filename += '6-bulan-terakhir'; break;
-                    case 'tahun-ini': filename += 'tahun-ini'; break;
-                    case 'custom': 
-                        const start = new Date(currentReportData.startDate).toISOString().split('T')[0];
-                        const end = new Date(currentReportData.endDate).toISOString().split('T')[0];
-                        filename += `${start}-to-${end}`;
-                        break;
-                    default: filename += new Date().toISOString().split('T')[0];
-                }
-                filename += '.pdf';
-                
                 // Save PDF
                 doc.save(filename);
                 showInfoModal('Laporan berhasil diexport ke PDF!');
@@ -1957,6 +1946,158 @@
             } catch (error) {
                 console.error('Error exporting to PDF:', error);
                 showInfoModal('Gagal export ke PDF', 'error');
+            }
+        }
+
+        // Fungsi untuk generate nama file laporan
+        function generateReportFilename(period, startDate, endDate) {
+            let filename = 'laporan-';
+            
+            switch(period) {
+                case 'bulan-ini':
+                    const currentMonth = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                    filename += currentMonth.toLowerCase().replace(' ', '-');
+                    break;
+                case 'bulan-lalu':
+                    const lastMonth = new Date();
+                    lastMonth.setMonth(lastMonth.getMonth() - 1);
+                    filename += lastMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }).toLowerCase().replace(' ', '-');
+                    break;
+                case '3-bulan':
+                    const threeMonthsAgo = new Date();
+                    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+                    const startMonth = threeMonthsAgo.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                    const endMonth = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                    filename += `${startMonth.toLowerCase().replace(' ', '-')}-sampai-${endMonth.toLowerCase().replace(' ', '-')}`;
+                    break;
+                case '6-bulan':
+                    const sixMonthsAgo = new Date();
+                    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+                    const startMonth6 = sixMonthsAgo.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                    const endMonth6 = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                    filename += `${startMonth6.toLowerCase().replace(' ', '-')}-sampai-${endMonth6.toLowerCase().replace(' ', '-')}`;
+                    break;
+                case 'tahun-ini':
+                    const currentYear = new Date().getFullYear();
+                    filename += `tahun-${currentYear}`;
+                    break;
+                case 'custom':
+                    const start = new Date(startDate).toISOString().split('T')[0];
+                    const end = new Date(endDate).toISOString().split('T')[0];
+                    filename += `${start}-sampai-${end}`;
+                    break;
+                default:
+                    filename += new Date().toISOString().split('T')[0];
+            }
+            
+            return filename;
+        }
+
+        // Fungsi untuk generate judul laporan
+        function generateReportTitle(period, startDate, endDate) {
+            let title = 'LAPORAN KEUANGAN - ';
+            
+            switch(period) {
+                case 'bulan-ini':
+                    const currentMonth = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                    title += currentMonth.toUpperCase();
+                    break;
+                case 'bulan-lalu':
+                    const lastMonth = new Date();
+                    lastMonth.setMonth(lastMonth.getMonth() - 1);
+                    title += lastMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }).toUpperCase();
+                    break;
+                case '3-bulan':
+                    const threeMonthsAgo = new Date();
+                    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+                    const startMonth = threeMonthsAgo.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                    const endMonth = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                    title += `${startMonth.toUpperCase()} - ${endMonth.toUpperCase()}`;
+                    break;
+                case '6-bulan':
+                    const sixMonthsAgo = new Date();
+                    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+                    const startMonth6 = sixMonthsAgo.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                    const endMonth6 = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                    title += `${startMonth6.toUpperCase()} - ${endMonth6.toUpperCase()}`;
+                    break;
+                case 'tahun-ini':
+                    const currentYear = new Date().getFullYear();
+                    title += `TAHUN ${currentYear}`;
+                    break;
+                case 'custom':
+                    const start = new Date(startDate).toLocaleDateString('id-ID');
+                    const end = new Date(endDate).toLocaleDateString('id-ID');
+                    title += `${start} - ${end}`;
+                    break;
+                default:
+                    title += new Date().toLocaleDateString('id-ID').toUpperCase();
+            }
+            
+            return title;
+        }
+
+        // Fungsi untuk generate teks periode
+        function generatePeriodText(period, startDate, endDate) {
+            switch(period) {
+                case 'bulan-ini':
+                    return new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                case 'bulan-lalu':
+                    const lastMonth = new Date();
+                    lastMonth.setMonth(lastMonth.getMonth() - 1);
+                    return lastMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                case '3-bulan':
+                    const threeMonthsAgo = new Date();
+                    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+                    const startMonth = threeMonthsAgo.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                    const endMonth = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                    return `${startMonth} - ${endMonth}`;
+                case '6-bulan':
+                    const sixMonthsAgo = new Date();
+                    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+                    const startMonth6 = sixMonthsAgo.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                    const endMonth6 = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                    return `${startMonth6} - ${endMonth6}`;
+                case 'tahun-ini':
+                    return `Tahun ${new Date().getFullYear()}`;
+                case 'custom':
+                    const start = new Date(startDate).toLocaleDateString('id-ID');
+                    const end = new Date(endDate).toLocaleDateString('id-ID');
+                    return `${start} - ${end}`;
+                default:
+                    return new Date().toLocaleDateString('id-ID');
+            }
+        }
+
+        // ========================
+        // FUNGSI DELETE TRANSAKSI
+        // ========================
+
+        // Fungsi untuk menghapus transaksi
+        async function deleteTransaksi(transaksiId, customerId, jumlahBayar) {
+            try {
+                // Hapus transaksi dari koleksi payments
+                await deleteDoc(doc(paymentsCollection, transaksiId));
+                
+                // Update status pelanggan - tambahkan kembali jumlah bayar ke tunggakan
+                const customerRef = doc(customersCollection, customerId);
+                const customerSnap = await getDoc(customerRef);
+                const customerData = customerSnap.data();
+                
+                const tunggakanBaru = (customerData.tunggakan || 0) + jumlahBayar;
+                
+                await updateDoc(customerRef, {
+                    tunggakan: tunggakanBaru
+                });
+                
+                showInfoModal('Transaksi berhasil dihapus dan status pelanggan diperbarui!');
+                
+                // Refresh laporan
+                generateReport();
+                
+            } catch (error) {
+                console.error('Error deleting transaction:', error);
+                showInfoModal('Gagal menghapus transaksi.', 'error');
             }
         }
 
@@ -3277,6 +3418,20 @@
                 }
                 if (target.classList.contains('btn-wa')) {
                     showWaModal(id);
+                }
+            });
+
+            // --- Event Listener untuk Delete Transaksi di Laporan ---
+            document.getElementById('reportTransactions').addEventListener('click', (e) => {
+                const target = e.target.closest('.btn-delete-transaksi');
+                if (!target) return;
+
+                const transaksiId = target.dataset.id;
+                const customerId = target.dataset.customerId;
+                const jumlahBayar = parseFloat(target.dataset.jumlah) || 0;
+
+                if (confirm('Apakah Anda yakin ingin menghapus transaksi ini? Status pelanggan akan dikembalikan menjadi belum bayar.')) {
+                    deleteTransaksi(transaksiId, customerId, jumlahBayar);
                 }
             });
 
