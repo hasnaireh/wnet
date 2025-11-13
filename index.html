@@ -180,7 +180,7 @@
                         </div>
 
                         <!-- Card Total Pelanggan -->
-                        <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div id="analytic-card-total" class="bg-white p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
@@ -210,7 +210,7 @@
                         </div>
 
                         <!-- Card Belum Lunas -->
-                        <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div id="analytic-card-belum-lunas" class="bg-white p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 bg-red-500 rounded-md p-3">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
@@ -254,6 +254,16 @@
                                     <span id="count-lunas" class="ml-2 hidden bg-green-100 text-green-600 py-0.5 px-2 rounded-full text-xs font-medium">0</span>
                                 </button>
                             </nav>
+                        </div>
+                    </div>
+
+                    <!-- Search Bar -->
+                    <div class="mb-4 relative">
+                        <input type="text" id="search-bar" placeholder="Cari nama pelanggan..." class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd" />
+                            </svg>
                         </div>
                     </div>
 
@@ -640,19 +650,19 @@
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // =========================================================================
-        // PENTING: Salin Konfigurasi Firebase Anda dan tempel di bawah ini
+        // Konfigurasi Firebase Anda (Dari file yang Anda unggah)
         // =========================================================================
-        const firebaseConfig = {
-  apiKey: "AIzaSyAUpWUeKypU53Fdb4okuZ-oVJNuyTK19i8",
-  authDomain: "wnet-c4907.firebaseapp.com",
-  projectId: "wnet-c4907",
-  storageBucket: "wnet-c4907.firebasestorage.app",
-  messagingSenderId: "427788084827",
-  appId: "1:427788084827:web:7978895d654fded498c17e"
-};
+       const firebaseConfig = {
+          apiKey: "AIzaSyAUpWUeKypU53Fdb4okuZ-oVJNuyTK19i8",
+          authDomain: "wnet-c4907.firebaseapp.com",
+          projectId: "wnet-c4907",
+          storageBucket: "wnet-c4907.appspot.com",
+          messagingSenderId: "427788084827",
+          appId: "1:427788084827:web:7978895d654fded498c17e"
+        };
         // =========================================================================
 
-        // --- Variabel Global ---
+        // --- Variabel Global Aplikasi ---
         let db;
         let auth;
         let customersCollection;
@@ -671,12 +681,14 @@
         const PASSWORD_HASH_KEY = 'wahyu-net-password-hash';
         const correctPassword = "net.wahyu"; // <-- KATA SANDI ANDA
 
-        // --- DOM Elements ---
+        // --- DOM Elements Aplikasi ---
         const customerList = document.getElementById('customer-list');
         const loadingOverlay = document.getElementById('loading-overlay');
         const emptyState = document.getElementById('empty-state');
         const totalTagihanHeader = document.getElementById('total-tagihan-header');
         const appTitleHeader = document.getElementById('app-title-header');
+        
+        // --- DOM Elements Kunci Sandi ---
         const lockScreen = document.getElementById('lockScreen');
         const appContent = document.getElementById('appContent');
         const lockForm = document.getElementById('lockForm');
@@ -703,16 +715,9 @@
             const storedHash = localStorage.getItem(PASSWORD_HASH_KEY);
             if (!storedHash) {
                 // Jika belum ada hash, ini adalah login pertama kali
-                // Kita tidak tampilkan layar kunci, tapi kita juga tidak set hash
-                // Kita akan set hash saat login pertama berhasil
                 console.log("Belum ada hash. Menunggu login pertama.");
             }
-            
-            // Cek hash setiap kali, kecuali jika ini login pertama
-            if (storedHash) {
-                // Jika sudah ada hash, cek login
-                // (Logika ini akan dipicu oleh form submit)
-            }
+            // Layar kunci akan tetap tampil sampai login berhasil
         }
         
         // Handle submit form login
@@ -750,10 +755,11 @@
         // Tampilkan error login
         function triggerLoginError() {
             passwordError.classList.remove('hidden');
-            lockScreen.classList.add('shake');
+            const lockFormContainer = lockForm.parentElement;
+            lockFormContainer.classList.add('shake');
             passwordInput.focus();
             setTimeout(() => {
-                lockScreen.classList.remove('shake');
+                lockFormContainer.classList.remove('shake');
             }, 500);
         }
 
@@ -765,7 +771,7 @@
             initializeAppService();
         }
 
-        // --- Fungsi Utama Aplikasi ---
+        // --- Fungsi Utama Aplikasi (dari file app wnet.txt) ---
 
         // Fungsi inisialisasi aplikasi
         async function initializeAppService() {
@@ -823,7 +829,7 @@
                 // Urutkan data berdasarkan nama
                 customersData.sort((a, b) => a.nama.localeCompare(b.nama));
                 
-                renderCustomers(currentFilter);
+                renderCustomers(currentFilter); // Render dengan filter dan search
                 calculateTotalBill();
                 updateFilterCounts();
                 updateAnalytics(); // Update data di Home
@@ -862,18 +868,28 @@
             document.getElementById('templateWa').value = appSettings.templateWa;
         }
 
-        // Fungsi untuk merender daftar pelanggan
+        // Fungsi untuk merender daftar pelanggan (dengan logika search)
         function renderCustomers(filter) {
             customerList.innerHTML = '';
             
-            let filteredCustomers = customersData;
-
+            // 1. Filter by tab
+            let filteredCustomers;
             if (filter === "lunas") {
                 filteredCustomers = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) === 0);
             } else if (filter === "belum-bayar") {
                 filteredCustomers = customersData.filter(c => (c.tunggakan || 0) + (c.tagihanBulanIni || 0) > 0);
             } else if (filter === "ada-tunggakan") {
                 filteredCustomers = customersData.filter(c => (c.tunggakan || 0) > 0);
+            } else { // 'semua'
+                filteredCustomers = customersData;
+            }
+
+            // 2. Filter by search term
+            const searchTerm = document.getElementById('search-bar').value.toLowerCase();
+            if (searchTerm) {
+                filteredCustomers = filteredCustomers.filter(c => 
+                    c.nama.toLowerCase().includes(searchTerm)
+                );
             }
 
             if (filteredCustomers.length === 0) {
@@ -902,11 +918,6 @@
                                         <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.18l3.75-3.75a1.651 1.651 0 0 1 2.333 0L8.41 7.39a1.651 1.651 0 0 1 0 2.333l-2.021 2.021a1.651 1.651 0 0 1-2.333 0l-3.39-3.39Zm12.021 0a1.651 1.651 0 0 1 0-1.18l3.75-3.75a1.651 1.651 0 0 1 2.333 0L21.09 7.39a1.651 1.651 0 0 1 0 2.333l-2.021 2.021a1.651 1.651 0 0 1-2.333 0l-3.39-3.39Z" clip-rule="evenodd" />
                                     </svg>
                                 </button>
-                                <button class="btn-prorata p-1 text-gray-400 hover:text-blue-600" data-id="${customer.id}" title="Tagihan Prorata">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                                        <path fill-rule="evenodd" d="M10 1.75a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Zm0 4.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Zm0 4.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Zm0 4.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
-                                    </svg>
-                                </button>
                                 ${!isLunas ? `
                                 <button class="btn-tagih p-1 text-gray-400 hover:text-blue-600" data-id="${customer.id}" title="Buat Tagihan Manual">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
@@ -916,7 +927,7 @@
                                 ` : ''}
                                 <button class="btn-delete p-1 text-gray-400 hover:text-red-600" data-id="${customer.id}" title="Hapus">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                                        <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 0 0-.53 1.025l.155.433c.365.966.746 1.925 1.15 2.872A8.9 8.9 0 0 0 8 13.5a.75.75 0 0 0 1.5 0c0-1.01.12-1.98.34-2.923.404-.947.785-1.906 1.15-2.872l.155-.433a.75.75 0 0 0-.53-1.025c-.78-.122-1.57-.22-2.365-.298V3.75A2.75 2.75 0 0 0 8.75 1ZM6.082 8.75c-.351-.81-.676-1.583-.976-2.316l-.008-.02-.013-.036a.75.75 0 0 1 1.025-.53l.433.155c.78.28 1.557.534 2.306.756a.75.75 0 0 0 .588 0c.749-.222 1.526-.476 2.306-.756l.433-.155a.75.75 0 0 1 1.025.53l-.013.036-.008.02c-.3.732-.625 1.506-.976 2.316a51.64 51.64 0 0 1-.84 1.953.75.75 0 0 0 .346 1.039l.23.115a.75.75 0 0 1 0 1.29l-.23.115a.75.75 0 0 0-.346 1.039c.27.625.568 1.28.84 1.953.301.732.625 1.506.976 2.316l.008.02.013.036a.75.75 0 0 1-1.025.53l-.433-.155c-.78-.28-1.557-.534-2.306-.756a.75.75 0 0 0-.588 0c-.749-.222-1.526-.476-2.306-.756l-.433-.155a.75.75 0 0 1-1.025-.53l.013-.036.008-.02c.3-.732.625 1.506.976 2.316.27-.625.568 1.28.84-1.953a.75.75 0 0 0-.346-1.039l-.23-.115a.75.75 0 0 1 0-1.29l.23-.115a.75.75 0 0 0 .346-1.039c-.27-.625-.568-1.28-.84-1.953Z" clip-rule="evenodd" />
+                                        <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 0 0-.53 1.025l.155.433c.365.966.746 1.925 1.15 2.872A8.9 8.9 0 0 0 8 13.5a.75.75 0 0 0 1.5 0c0-1.01.12-1.98.34-2.923.404-.947.785-1.906 1.15-2.872l.155-.433a.75.75 0 0 0-.53-1.025c-.78-.122-1.57-.22-2.365-.298V3.75A2.75 2.75 0 0 0 8.75 1ZM6.082 8.75c-.351-.81-.676-1.583-.976-2.316l-.008-.02-.013-.036a.75.75 0 0 1 1.025-.53l.433.155c.78.28 1.557.534 2.306.756a.75.75 0 0 0 .588 0c.749-.222 1.526-.476 2.306-.756l.433-.155a.75.75 0 0 1 1.025.53l-.013.036-.008.02c-.3.732-.625 1.506-.976 2.316a51.64 51.64 0 0 1-.84 1.953.75.75 0 0 0 .346 1.039l.23.115a.75.75 0 0 1 0 1.29l-.23.115a.75.75 0 0 0-.346 1.039c.27.625.568 1.28.84 1.953.301.732.625 1.506.976 2.316l.008.02.013.036a.75.75 0 0 1-1.025.53l-.433-.155c-.78-.28-1.557-.534-2.306-.756a.75.75 0 0 0-.588 0c-.749-.222-1.526-.476-2.306-.756l-.433-.155a.75.75 0 0 1-1.025-.53l.013-.036.008-.02c.3-.732.625 1.506.976 2.316.27-.625.568-1.28.84-1.953a.75.75 0 0 0-.346-1.039l-.23-.115a.75.75 0 0 1 0-1.29l.23-.115a.75.75 0 0 0 .346-1.039c-.27-.625-.568-1.28-.84-1.953Z" clip-rule="evenodd" />
                                     </svg>
                                 </button>
                             </div>
@@ -940,7 +951,7 @@
                         </div>
                     </div>
 
-                    <div class="mt-5 flex ${isLunas ? 'justify-end' : 'justify-between'} items-center">
+                    <div class="mt-5 flex ${isLunas ? 'justify-end' : 'flex-col sm:flex-row'} items-center ${isLunas ? '' : 'space-y-2 sm:space-y-0 sm:space-x-2'}">
                         ${isLunas ? `
                             <span class="text-sm font-semibold text-green-600 flex items-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 mr-1">
@@ -949,11 +960,14 @@
                                 LUNAS
                             </span>
                         ` : `
-                            <button class="btn-bayar w-full mr-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" data-id="${customer.id}">
+                            <button class="btn-bayar w-full px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" data-id="${customer.id}">
                                 Bayar
                             </button>
-                            <button class="btn-wa w-full ml-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500" data-id="${customer.id}">
+                            <button class="btn-wa w-full px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500" data-id="${customer.id}">
                                 Kirim WA
+                            </button>
+                            <button class="btn-prorata w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500" data-id="${customer.id}">
+                                Prorata
                             </button>
                         `}
                     </div>
@@ -1549,11 +1563,32 @@
             }
         }
 
+        // Fungsi untuk navigasi antar tab
+        function navigateToTab(pageId, filter = null) {
+            // 1. Klik tombol nav yang sesuai
+            const navButton = document.querySelector(`.btn-nav[data-page="${pageId}"]`);
+            if (navButton) {
+                navButton.click();
+            }
+
+            // 2. Jika ada filter, terapkan
+            if (pageId === 'pelanggan' && filter) {
+                // Beri sedikit waktu agar halaman pelanggan di-render
+                setTimeout(() => {
+                    const filterButton = document.querySelector(`.tab-filter[data-filter="${filter}"]`);
+                    if (filterButton) {
+                        filterButton.click();
+                    }
+                }, 50); // 50ms delay
+            }
+        }
+
 
         // =============================================
-        // EVENT LISTENERS
+        // EVENT LISTENERS (Digabungkan)
         // =============================================
         document.addEventListener('DOMContentLoaded', () => {
+            // --- Logika Kunci Sandi ---
             checkURLReset(); // Cek reset password dari URL
             initializeLockScreen(); // Siapkan layar kunci
             lockForm.addEventListener('submit', handleLogin); // Listener untuk form login
@@ -1668,6 +1703,19 @@
                 renderCustomers(currentFilter);
             });
 
+            // --- Event Listener Search Bar ---
+            document.getElementById('search-bar').addEventListener('input', () => {
+                renderCustomers(currentFilter);
+            });
+
+            // --- Event Listener Home Analytic Cards ---
+            document.getElementById('analytic-card-total').addEventListener('click', () => {
+                navigateToTab('pelanggan', 'semua');
+            });
+            document.getElementById('analytic-card-belum-lunas').addEventListener('click', () => {
+                navigateToTab('pelanggan', 'belum-bayar');
+            });
+
             // --- Event Listener Form ---
             document.getElementById('customerForm').addEventListener('submit', saveCustomer);
             document.getElementById('fab-tambah-pelanggan').addEventListener('click', () => showCustomerModal());
@@ -1723,4 +1771,3 @@
     </script>
 </body>
 </html>
-
